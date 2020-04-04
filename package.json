@@ -1,0 +1,29 @@
+{
+    "version": "0.0.5",
+    "scripts": {
+        "build": "webpack --env.NODE_ENV=dev --display-error-details",
+        "build:prod": "webpack --env.NODE_ENV=prod --display-error-details",
+        "deploy": "npm run build && clasp push -f",
+        "deploy:prod": "npm run build:prod && clasp push -f"
+    },
+    "devDependencies": {
+        "@babel/core": "^7.9.0",
+        "@babel/plugin-proposal-class-properties": "^7.8.3",
+        "@babel/plugin-proposal-object-rest-spread": "^7.9.0",
+        "@babel/plugin-proposal-optional-chaining": "^7.9.0",
+        "@babel/plugin-transform-regenerator": "^7.8.7",
+        "@babel/plugin-transform-runtime": "^7.9.0",
+        "@babel/preset-env": "^7.9.0",
+        "@babel/preset-typescript": "^7.9.0",
+        "@babel/runtime": "^7.9.2",
+        "@types/google-apps-script": "1.0.11",
+        "babel-loader": "^8.1.0",
+        "clean-webpack-plugin": "^3.0.0",
+        "copy-webpack-plugin": "^5.1.1",
+        "gas-webpack-plugin": "^1.0.2",
+        "terser-webpack-plugin": "^2.3.5",
+        "webpack": "^4.42.1",
+        "webpack-cli": "^3.3.11"
+    },
+    "dependencies": {}
+}
