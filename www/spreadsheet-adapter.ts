@@ -6,7 +6,8 @@ export class SpreadsheetAdapter {
     protected header: string[];
     protected headerRange: GoogleAppsScript.Spreadsheet.Range;
 
-    constructor(name: string, id?: string, headerA1Notation?: string) {
+    init(params?: any) {
+        let { name, id, headerA1Notation } = params;
         this.sheetName = name;
         this.sheet = id
             ? SpreadsheetApp.openById(id).getSheetByName(name)
@@ -15,7 +16,7 @@ export class SpreadsheetAdapter {
         this.headerRange = headerA1Notation
             ? this.sheet.getRange(headerA1Notation)
             : this.sheet.getRange(1, 1, 1, this.lastColumn);
-        this.header = this.headerRange.getValues()[0];
+        this.header = this.headerRange.getValues()[0].map(h => this.normalize(h));
     }
 
     get startRow(): number {
@@ -43,21 +44,18 @@ export class SpreadsheetAdapter {
         return this.headerRange.getNumColumns();
     }
 
-    get cacheId(): string {
-        return `${this.spreadsheetId}.${this.sheetName}`;
-    }
-
-    select(start?: number, size?: number): any[] {
+    select(offset?: number, limit?: number): any[] {
         let numRowsOfHeader = this.headerRange.getLastRow() - this.headerRange.getRow() + 1;
-        start = (start + numRowsOfHeader) || this.startRow;
-        size = size || this.numRows;
-        let range = this.sheet.getRange(start, this.startColumn, size, this.numColumns);
+        offset = offset ? offset * 1 + numRowsOfHeader : this.startRow;
+        limit = limit ? limit * 1 : this.numRows;
+        limit = limit < this.numRows ? limit : this.numRows;
+        let range = this.sheet.getRange(offset, this.startColumn, limit, this.numColumns);
         let data = range.getValues();
         let rows: any[] = [];
 
-        for (let i = 0; i < size; i++) {
+        for (let i = 0; i < limit; i++) {
             let dataRow: Record<string, any> = {};
-            dataRow[SpreadsheetAdapter.sysId] = this.startRow + i;
+            dataRow[SpreadsheetAdapter.sysId] = offset + i;
             for (let j = 0; j < this.header.length; j++) {
                 let colName = this.header[j];
                 dataRow[colName] = data[i][j];
@@ -65,6 +63,11 @@ export class SpreadsheetAdapter {
             rows.push(dataRow);
         }
         return rows;
+    }
+
+    selectWhere(where: (rec: any) => boolean, start?: number, size?: number): any[] {
+        let records = this.select(start, size);
+        return records.filter(where);
     }
 
     insert(record: any): any {
@@ -89,16 +92,28 @@ export class SpreadsheetAdapter {
         return records;
     }
 
-    delete(rowId: number): void {
-        this.sheet.deleteRow(rowId);
-    }
-
     update(record: any): void {
         let rowId = record[SpreadsheetAdapter.sysId];
         if (rowId) {
             let item = this.valuesToArray(record);
             this.sheet.getRange(rowId, this.startColumn, 1, item.length).setValues([item]);
         }
+    }
+
+    updateBatch(records: any[]): void {
+        records.forEach(record => {
+            this.update(record);
+        });
+    }
+
+    delete(rowId: number): void {
+        this.sheet.deleteRow(rowId);
+    }
+
+    deleteBatch(ids: number[]): void {
+        ids.forEach(id => {
+            this.delete(id);
+        });
     }
 
     getEmptyRow(def: any): any {
@@ -110,7 +125,19 @@ export class SpreadsheetAdapter {
         return dataRow;
     }
 
+    getTotal(): number {
+        return this.numRows;
+    }
+
+    getSessionId(offset?: number, limit?: number): string {
+        return `${this.spreadsheetId}.${this.sheetName}_${offset || ''}_${limit || ''}`;
+    }
+
     protected valuesToArray(obj: any): any[] {
         return this.header.map(col => obj[col] ? obj[col] : '');
+    }
+
+    protected normalize(name: string): string {
+        return name.replace(/[^\w_$]/, '_');
     }
 }

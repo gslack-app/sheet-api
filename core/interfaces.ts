@@ -43,7 +43,7 @@ export interface ServletConfig {
 export interface RouteConfig {
     method: 'GET' | 'POST';
     handler: string | Function;
-    pattern: string;
+    patterns: (string | RegExp)[];
 }
 
 export interface RequestDispatcher {

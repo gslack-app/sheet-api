@@ -3,14 +3,12 @@ const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
 const GasPlugin = require('gas-webpack-plugin');
-const { version } = require('./package.json');
-
 const src = path.resolve(__dirname);
 const destination = path.resolve(__dirname, 'app');
 
 module.exports = (env) => {
     const isProd = env.NODE_ENV === 'prod';
-    return {
+    return [{
         target: 'web',
         mode: isProd ? 'production' : 'development',
         context: __dirname,
@@ -21,7 +19,7 @@ module.exports = (env) => {
         output: {
             libraryTarget: 'this',
             path: destination,
-            filename: `[name]-${version}.js`
+            filename: `[name]-${require("./package.json").version.toString()}.js`
         },
         module: {
             rules: [
@@ -35,7 +33,7 @@ module.exports = (env) => {
             ]
         },
         resolve: {
-            extensions: ['.js', '.ts']
+            extensions: ['.ts', '.js']
         },
         optimization: {
             minimize: isProd,
@@ -74,8 +72,62 @@ module.exports = (env) => {
             ]),
             new GasPlugin({
                 comments: false,
-                source: 'glask.app'
+                source: 'gslack.app'
             })
         ]
-    }
-};
+    },
+    {
+        target: 'web',
+        mode: isProd ? 'production' : 'development',
+        context: __dirname,
+        devtool: false,
+        entry: {
+            jsonQuery: path.resolve(__dirname, 'node_modules', 'json-query', 'index.js')
+        },
+        output: {
+            libraryTarget: 'var',
+            library: 'jsonQuery',
+            globalObject: 'this',
+            path: destination,
+            filename: `json-query-${require("./node_modules/json-query/package.json").version.toString()}.js`
+        },
+        module: {
+            rules: [
+                {
+                    test: /\.js$/,
+                    use: {
+                        loader: 'babel-loader'
+                    }
+                }
+            ]
+        },
+        resolve: {
+            extensions: ['.js']
+        },
+        optimization: {
+            minimize: isProd,
+            minimizer: [
+                new TerserPlugin({
+                    terserOptions: {
+                        ecma: 6,
+                        warnings: false,
+                        mangle: {},
+                        compress: {
+                            drop_console: false,
+                            drop_debugger: isProd
+                        },
+                        output: {
+                            beautify: !isProd
+                        }
+                    }
+                })
+            ]
+        },
+        plugins: [
+            new CleanWebpackPlugin(),
+            new GasPlugin({
+                comments: false
+            })
+        ]
+    }];
+}

@@ -163,7 +163,9 @@ export class HttpServletContainer implements ServletContainer {
 
         this.config.routes.forEach(sr => {
             // Lazy initialization for servlet
-            this.router.add(sr.method, sr.pattern, sr.handler);
+            sr.patterns.forEach(p => {
+                this.router.add(sr.method, p, sr.handler);
+            });
         });
     }
 

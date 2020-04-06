@@ -1,8 +1,9 @@
 // Entry point - CUSTOMIZE YOUR OWN
-import { render, Configuration, LogFilter, StackdriverLogger, html, css, js } from "../core/common";
+import { render, Configuration, LogFilter, StackdriverLogger, html, css, js, CacheProvider } from "../core/common";
 import { LogLevel, WebConfig } from "../core/interfaces";
 import { HttpServletResponse, HttpServletContainer, HttpServletRequest } from "../core/servlet";
 import { DependencyInjection } from "../core/vendors";
+import { ApiServlet, ApiNotFoundHandler } from "./api";
 import { SpreadsheetAdapter } from "./spreadsheet-adapter";
 
 // declare var global: any;
@@ -61,17 +62,18 @@ function getConfig(): WebConfig {
         name: appName,
         description: 'GSlack Servlet',
         servlets: [
+            {
+                name: 'ApiServlet'
+            }
         ],
         routes: [
             {
                 method: 'GET',
-                handler: () => render('views/404', null, appName),
-                pattern: '/404'
-            },
-            {
-                method: 'GET',
-                handler: () => render('views/index', null, appName),
-                pattern: '/'
+                handler: 'ApiServlet',
+                patterns: [
+                    /\/api\/v1\/(?<resource>\w+)\/?$/i,
+                    /\/api\/v1\/(?<resource>\w+)\/(?<id>\d+)\/?$/i
+                ]
             }
         ],
         context: {
@@ -90,18 +92,15 @@ function getConfig(): WebConfig {
 };
 
 function getDI(): DependencyInjection {
-    return new DependencyInjection([
+    return new DependencyInjection([//
         { name: 'ServletRequest', useClass: HttpServletRequest },
         { name: 'ServletResponse', useClass: HttpServletResponse },
+        { name: 'NotFoundHandler', useClass: ApiNotFoundHandler },
         { name: 'IConfiguration', useClass: Configuration },
+        { name: 'ICache', useClass: CacheProvider },
         { name: 'ILogger', useClass: StackdriverLogger },
+        { name: 'IDataAdapter', useClass: SpreadsheetAdapter },
         { name: 'LogFilter', useClass: LogFilter, deps: ['ILogger'] },
+        { name: 'ApiServlet', useClass: ApiServlet, deps: ['ICache', 'ILogger', 'IDataAdapter'] },
     ]);
-}
-
-function test() {
-    let sa = new SpreadsheetAdapter("Customers");
-    let data = sa.select();
-    Logger.log(JSON.stringify(data));
-    Logger.log(`Lenght ${data.length}`);
 }

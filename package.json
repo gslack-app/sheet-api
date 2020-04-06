@@ -25,5 +25,7 @@
         "webpack": "^4.42.1",
         "webpack-cli": "^3.3.11"
     },
-    "dependencies": {}
+    "dependencies": {
+        "json-query": "^2.2.2"
+    }
 }
