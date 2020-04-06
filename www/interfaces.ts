@@ -10,10 +10,10 @@ export interface IDataAdapter {
     deleteBatch(ids: number[]): void;
     getEmptyRow(def: any): any;
     getTotal(): number;
-    getSessionId(offset?: number, limit?: number): string;
+    getSessionId(): string;
 }
 
-declare function jsonQuery(query: string, options: {
+export declare function jsonQuery(query: string, options: {
     data?: any;
     rootContext?: any;
     source?: any;

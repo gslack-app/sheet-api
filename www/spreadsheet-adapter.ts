@@ -129,8 +129,8 @@ export class SpreadsheetAdapter {
         return this.numRows;
     }
 
-    getSessionId(offset?: number, limit?: number): string {
-        return `${this.spreadsheetId}.${this.sheetName}_${offset || ''}_${limit || ''}`;
+    getSessionId(): string {
+        return `${this.spreadsheetId}.${this.sheetName}`;
     }
 
     protected valuesToArray(obj: any): any[] {
