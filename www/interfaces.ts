@@ -7,10 +7,11 @@ export interface IDataAdapter {
     update(record: any): void;
     updateBatch(records: any[]): void;
     delete(rowId: number): void;
-    deleteBatch(ids: number[]): void;
+    deleteBatch(rids: number[]): void;
     getEmptyRow(def: any): any;
     getTotal(): number;
     getSessionId(): string;
+    getSysId(): string;
 }
 
 export declare function jsonQuery(query: string, options: {

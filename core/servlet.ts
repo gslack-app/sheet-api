@@ -11,6 +11,8 @@ export class HttpServletRequest implements ServletRequest {
     raw: RequestEvent;
     param: Record<string, any>;
     params: Record<string, any[]>;
+    postData: any;
+    type: string;
     url: string;
 
     constructor() {
@@ -22,22 +24,25 @@ export class HttpServletRequest implements ServletRequest {
     init(method: 'GET' | 'POST', request: RequestEvent) {
         this.raw = request;
         this.method = method;
-        let type = request.postData ? request.postData.type : '';
 
-        switch (type) {
-            case 'application/json':
-                try {
-                    this.param = JSON.parse(request.postData.contents);
-                }
-                catch {
-                    this.param = null;
-                }
-                break;
-            default:
-                this.param = request.parameter;
-                break;
+        if (request.postData) {
+            this.type = request.postData.type;
+            switch (this.type) {
+                case 'application/json':
+                    try {
+                        this.postData = JSON.parse(request.postData.contents);
+                    }
+                    catch {
+                        this.postData = null;
+                    }
+                    break;
+                default:
+                    this.postData = request.postData.contents;
+                    break;
+            }
         }
 
+        this.param = request.parameter;
         this.params = request.parameters;
         this.url = this.param['url'] || '/';
     }
@@ -245,13 +250,6 @@ export class HttpServletContainer implements ServletContainer {
                 servlet.doPost(req, res);
             });
             res.end();
-
-            if (res.status == HttpStatusCode.TEMPORARY_REDIRECT) {
-                let url = res.output.getContent();
-                if (url.indexOf('http') == -1)
-                    url = `${this.path}?url=${url}}`;
-                return redirect(url);
-            }
             return res.output;
         }
         return this.notFound.doPost();

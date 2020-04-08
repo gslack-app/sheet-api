@@ -1,5 +1,5 @@
 export class SpreadsheetAdapter {
-    public static readonly sysId: string = '_id_';
+    public static readonly sysId: string = '_rid_';
     protected sheet: GoogleAppsScript.Spreadsheet.Sheet;
     protected sheetName: string;
     protected spreadsheetId: string;
@@ -110,9 +110,9 @@ export class SpreadsheetAdapter {
         this.sheet.deleteRow(rowId);
     }
 
-    deleteBatch(ids: number[]): void {
-        ids.forEach(id => {
-            this.delete(id);
+    deleteBatch(rids: number[]): void {
+        rids.forEach(rid => {
+            this.delete(rid);
         });
     }
 
@@ -131,6 +131,10 @@ export class SpreadsheetAdapter {
 
     getSessionId(): string {
         return `${this.spreadsheetId}.${this.sheetName}`;
+    }
+
+    getSysId(): string {
+        return SpreadsheetAdapter.sysId;
     }
 
     protected valuesToArray(obj: any): any[] {

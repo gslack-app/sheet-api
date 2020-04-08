@@ -87,6 +87,8 @@ export interface ServletRequest {
     secure: boolean;
     raw: RequestEvent;
     url: string;
+    postData: any;
+    type: string;
     init(method: 'GET' | 'POST', request: RequestEvent): void;
 }
 

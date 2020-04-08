@@ -164,9 +164,13 @@ export class LogFilter extends HttpFilter {
     }
 
     doFilter(request: ServletRequest, response: ServletResponse): void {
-        this.logger.debug(request.url);
-        if (request.url.indexOf('view_submission') < 0)
-            this.logger.debug(request.raw);
+        this.logger.debug(`${request.method} ${request.url} (${this.objectToString(request.param)})`);
+        if (request.postData)
+            this.logger.debug(request.postData);
+    }
+
+    private objectToString(obj: any): string {
+        return Object.keys(obj).map(k => `${k}=${obj[k]}`).join('&');
     }
 }
 //#endregion

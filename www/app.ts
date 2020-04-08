@@ -55,12 +55,10 @@ function authorizeScript(): void {
 }
 
 function getConfig(): WebConfig {
-    let logger = getDI().get('ILogger');
     let logLevel: any = PropertiesService.getScriptProperties().getProperty('app.logLevel') || LogLevel.INFO;
-
     return {
         name: appName,
-        description: 'GSlack Servlet',
+        description: 'GSlack Sheet API',
         servlets: [
             {
                 name: 'ApiServlet'
@@ -73,6 +71,14 @@ function getConfig(): WebConfig {
                 patterns: [
                     /\/api\/v1\/(?<resource>\w+)\/?$/i,
                     /\/api\/v1\/(?<resource>\w+)\/(?<id>\d+)\/?$/i
+                ]
+            },
+            {
+                method: 'POST',
+                handler: 'ApiServlet',
+                patterns: [
+                    /\/api\/v1\/(?<action>create)\/(?<resource>\w+)\/?$/i,
+                    /\/api\/v1\/(?<action>(update|delete))\/(?<resource>\w+)\/(?<id>\d+)\/?$/i
                 ]
             }
         ],
@@ -103,4 +109,11 @@ function getDI(): DependencyInjection {
         { name: 'LogFilter', useClass: LogFilter, deps: ['ILogger'] },
         { name: 'ApiServlet', useClass: ApiServlet, deps: ['ICache', 'ILogger', 'IDataAdapter'] },
     ]);
+}
+
+function a() {
+    let sa = new SpreadsheetAdapter();
+    sa.init({ name: 'Customers' });
+    let obj = sa.getEmptyRow('');
+    Logger.log(JSON.stringify(obj));
 }
