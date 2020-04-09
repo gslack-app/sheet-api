@@ -24,6 +24,18 @@ export interface Rule {
     role: string;
 }
 
+export declare namespace acl {
+    export class ACLService {
+        createRole(role: string): boolean;
+        hasRole(role: string): boolean;
+        createRule(rule: string, role: string): boolean;
+        clear(): void;
+        isAllowed(access: string, role: string): boolean;
+        areAllowed(accessList: string[], role: string): boolean;
+        anyAllowed(accessList: string[], role: string): boolean;
+    }
+}
+
 export declare function jsonQuery(query: string, options: {
     data?: any;
     rootContext?: any;
