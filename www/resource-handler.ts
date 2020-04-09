@@ -1,12 +1,12 @@
+import { doQuery } from "./api";
 import { IDataAdapter, Resource } from "./interfaces";
 import { HttpFilter } from "../core/common";
 import { ILogger, ServletRequest, ICache, ServletResponse } from "../core/interfaces";
-import { doQuery } from "./api";
 
 export class ResourceHandler extends HttpFilter {
+    private cacheSvc: ICache;
     private logger: ILogger;
     private adapter: IDataAdapter;
-    private cacheSvc: ICache;
     private resources: Resource[];
 
     constructor({ ICache, ILogger, IDataAdapter }: any) {
@@ -18,7 +18,7 @@ export class ResourceHandler extends HttpFilter {
 
     init(param?: Record<string, any>): void {
         super.init(param);
-        let { resources, schemas } = this.param;
+        let { resources } = this.param;
         this.adapter.init({ name: resources });
         let resourceCacheId = this.adapter.getSessionId();
         this.resources = this.cacheSvc.get(resourceCacheId);
@@ -47,7 +47,7 @@ export class ResourceHandler extends HttpFilter {
         }
     }
 
-    protected extractId(url: string): string {
+    private extractId(url: string): string {
         let regex = /spreadsheets\/d\/(?<spreadsheetId>[a-zA-Z0-9-_]+)/i;
         const { groups: { spreadsheetId } } = regex.exec(url) as any;
         return spreadsheetId;

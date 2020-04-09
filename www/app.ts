@@ -113,8 +113,7 @@ function getConfig(): WebConfig {
                 name: 'ResourceHandler',
                 order: 2,
                 param: {
-                    resources: 'Resources',
-                    schemas: 'Schemas'
+                    resources: 'Resources'
                 }
             }
         ]
