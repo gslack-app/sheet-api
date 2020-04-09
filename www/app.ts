@@ -1,21 +1,19 @@
-// Entry point - CUSTOMIZE YOUR OWN
-import { render, Configuration, LogFilter, StackdriverLogger, html, css, js, CacheProvider } from "../core/common";
+import { ApiServlet, ApiNotFoundHandler } from "./api";
+import { ApiGatekeeper } from "./api-gatekeeper";
+import { SpreadsheetAdapter } from "./spreadsheet-adapter";
+import { ResourceHandler } from "./resource-handler";
+import { Configuration, LogFilter, StackdriverLogger, CacheProvider } from "../core/common";
 import { LogLevel, WebConfig } from "../core/interfaces";
 import { HttpServletResponse, HttpServletContainer, HttpServletRequest } from "../core/servlet";
 import { DependencyInjection } from "../core/vendors";
-import { ApiServlet, ApiNotFoundHandler } from "./api";
-import { SpreadsheetAdapter } from "./spreadsheet-adapter";
-import { ApiGatekeeper } from "./api-gatekeeper";
 
 // declare var global: any;
 // global.doGet = doGet;
 // global.doPost = doPost;
 // global.onOpen = onOpen;
 // global.authorizeScript = authorizeScript;
-// global.html = html;
-// global.css = css;
-// global.js = js;
-let appName: string = 'GSlack SheetAPI';
+// global.clearCache = clearCache;
+let appName: string = 'Sheet API';
 
 function doGet(request: any): any {
     let container = new HttpServletContainer();
@@ -34,6 +32,7 @@ function onOpen(e: any): void {
         var spreadsheet = SpreadsheetApp.getActive();
         var menuItems = [
             { name: 'Authorize', functionName: 'authorizeScript' },
+            { name: 'Clear Cache', functionName: 'clearCache' },
         ];
         spreadsheet.addMenu(appName, menuItems);
     }
@@ -55,11 +54,21 @@ function authorizeScript(): void {
     }
 }
 
+function clearCache(): void {
+    let ss = SpreadsheetApp.getActiveSpreadsheet();
+    let id = ss.getId();
+    let cacheSvc: CacheProvider = getDI().get('ICache');
+    ss.getSheets().forEach(sheet => {
+        cacheSvc.remove(`${id}.${sheet.getName()}`);
+    });
+    Browser.msgBox('Cache cleaned up');
+}
+
 function getConfig(): WebConfig {
     let logLevel: any = PropertiesService.getScriptProperties().getProperty('app.logLevel') || LogLevel.INFO;
     return {
         name: appName,
-        description: 'GSlack Sheet API',
+        description: 'Sheet API',
         servlets: [
             {
                 name: 'ApiServlet'
@@ -97,8 +106,15 @@ function getConfig(): WebConfig {
                 order: 1,
                 param: {
                     authentication: 'Authentication',
-                    authorization: 'Authorization',
-                    spreadsheetId: null
+                    authorization: 'Authorization'
+                }
+            },
+            {
+                name: 'ResourceHandler',
+                order: 2,
+                param: {
+                    resources: 'Resources',
+                    schemas: 'Schemas'
                 }
             }
         ]
@@ -117,6 +133,7 @@ function getDI(): DependencyInjection {
         { name: 'LogFilter', useClass: LogFilter, deps: ['ILogger'] },
         { name: 'ApiServlet', useClass: ApiServlet, deps: ['ICache', 'ILogger', 'IDataAdapter'] },
         { name: 'ApiGatekeeper', useClass: ApiGatekeeper, deps: ['ICache', 'ILogger', 'IDataAdapter'] },
+        { name: 'ResourceHandler', useClass: ResourceHandler, deps: ['ICache', 'ILogger', 'IDataAdapter'] }
     ]);
 }
 

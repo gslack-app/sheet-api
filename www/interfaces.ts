@@ -19,6 +19,12 @@ export interface Identity {
     roles: string[];
 }
 
+export interface Resource {
+    name: string;
+    url: string;
+    sheet: string;
+}
+
 export interface Rule {
     action: string;
     role: string;

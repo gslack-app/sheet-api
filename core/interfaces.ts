@@ -54,6 +54,10 @@ export interface Filter {
     param: Record<string, any>;
     init(param?: Record<string, any>): void;
     doFilter(request: ServletRequest, response: ServletResponse): void;
+    beforeGet(request: ServletRequest, response: ServletResponse): void;
+    afterGet(request: ServletRequest, response: ServletResponse): void;
+    beforePost(request: ServletRequest, response: ServletResponse): void;
+    afterPost(request: ServletRequest, response: ServletResponse): void;
 }
 
 export interface IContainer {

@@ -20,8 +20,8 @@ export class ApiGatekeeper extends HttpFilter {
 
     init(param?: Record<string, any>): void {
         super.init(param);
-        let { authentication, authorization, spreadsheetId } = this.param;
-        this.adapter.init({ name: authentication, id: spreadsheetId });
+        let { authentication, authorization } = this.param;
+        this.adapter.init({ name: authentication });
         let identityCacheId = this.adapter.getSessionId();
         this.identities = this.cacheSvc.get(identityCacheId);
         if (!this.identities) {
@@ -29,7 +29,7 @@ export class ApiGatekeeper extends HttpFilter {
             this.cacheSvc.set(identityCacheId, this.identities)
         }
 
-        this.adapter.init({ name: authorization, id: spreadsheetId });
+        this.adapter.init({ name: authorization });
         let ruleCacheId = this.adapter.getSessionId();
         this.rules = this.cacheSvc.get(ruleCacheId);
         if (!this.rules) {
@@ -70,13 +70,13 @@ export class ApiGatekeeper extends HttpFilter {
 
     private getIdenity(token: string): Identity {
         if (token) {
-            let recs = jsonQuery(`[*token=${token}]`, {
+            let rec = jsonQuery(`[*token=${token}]`, {
                 data: this.identities,
                 force: []
-            }).value as any[];
+            }).value[0];
             return {
-                token: recs[0].token,
-                roles: recs[0].roles.split(',').map(r => r.trim())
+                token: rec.token,
+                roles: rec.roles.split(',').map(r => r.trim())
             }
         }
         return null;

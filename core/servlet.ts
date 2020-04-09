@@ -1,5 +1,5 @@
 import { redirect } from "./common";
-import { ServletRequest, RequestEvent, ServletResponse, HttpStatusCode, Servlet, Filter, NotFoundHandler, ServletContainer, WebConfig, ServletConfig, IContainer, IRouter } from "./interfaces";
+import { ServletRequest, RequestEvent, ServletResponse, HttpStatusCode, Servlet, Filter, NotFoundHandler, ServletContainer, WebConfig, ServletConfig, IContainer, IRouter, FilterConfig } from "./interfaces";
 import { Trouter } from "./vendors";
 
 //#region Classes
@@ -155,6 +155,7 @@ export class HttpServletContainer implements ServletContainer {
     protected di: IContainer;
     protected router: IRouter;
     protected notFound: NotFoundHandler;
+    protected filters: Filter[];
 
     get path(): string {
         return ScriptApp.getService().getUrl();
@@ -165,23 +166,25 @@ export class HttpServletContainer implements ServletContainer {
         this.di = di;
         this.router = new Trouter();
         this.notFound = this.di.get(handler404);
-
         this.config.routes.forEach(sr => {
             // Lazy initialization for servlet
             sr.patterns.forEach(p => {
                 this.router.add(sr.method, p, sr.handler);
             });
         });
+        this.filters = this.initFilters(this.config.filters);
     }
 
     doGet(request: RequestEvent): GoogleAppsScript.Content.TextOutput | GoogleAppsScript.HTML.HtmlOutput {
         let req: ServletRequest = this.di.get('ServletRequest');
         let res: ServletResponse = this.di.get('ServletResponse');
         req.init('GET', request);
-        this.applyFilter(req, res);
 
-        if (res.committed)
-            return res.output;
+        for (let f of this.filters) {
+            f.doFilter(req, res);
+            if (res.committed)
+                return res.output;
+        }
 
         let route = this.router.find('GET', req.url);
         if (route.handlers.length) {
@@ -201,10 +204,10 @@ export class HttpServletContainer implements ServletContainer {
                     return handler();
                 }
             }
-
-            this.initServlet(servlets).forEach(servlet => {
-                servlet.doGet(req, res);
-            });
+            
+            this.filters.forEach(f => f.beforeGet(req, res));
+            this.initServlets(servlets).forEach(servlet => servlet.doGet(req, res));
+            this.filters.forEach(f => f.afterGet(req, res));
             res.end();
 
             if (res.status == HttpStatusCode.TEMPORARY_REDIRECT) {
@@ -222,10 +225,12 @@ export class HttpServletContainer implements ServletContainer {
         let req: ServletRequest = this.di.get('ServletRequest');
         let res: ServletResponse = this.di.get('ServletResponse');
         req.init('POST', request);
-        this.applyFilter(req, res);
 
-        if (res.committed)
-            return res.output;
+        for (let f of this.filters) {
+            f.doFilter(req, res);
+            if (res.committed)
+                return res.output;
+        }
 
         let route = this.router.find('POST', req.url);
         if (route.handlers.length) {
@@ -245,31 +250,28 @@ export class HttpServletContainer implements ServletContainer {
                     return handler();
                 }
             }
-
-            this.initServlet(servlets).forEach(servlet => {
-                servlet.doPost(req, res);
-            });
+            
+            this.filters.forEach(f => f.beforePost(req, res));
+            this.initServlets(servlets).forEach(servlet => servlet.doPost(req, res));
+            this.filters.forEach(f => f.afterPost(req, res));
             res.end();
             return res.output;
         }
         return this.notFound.doPost();
     }
 
-    protected applyFilter(request: ServletRequest, response: ServletResponse): void {
+    protected initFilters(configs: FilterConfig[]): Filter[] {
         // Apply filters by order
-        this.config.filters.sort((a, b) => a.order - b.order);
-        for (let i = 0; i < this.config.filters.length; i++) {
-            let fc = this.config.filters[i];
+        let filters: Filter[] = [];
+        configs.sort((a, b) => a.order - b.order);
+        configs.forEach(fc => {
             let filter: Filter = this.di.get(fc.name);
-
             if (filter) {
                 filter.init(fc.param);
-                filter.doFilter(request, response);
+                filters.push(filter);
             }
-
-            if (response.committed)
-                break;
-        };
+        });
+        return filters;
     }
 
     protected getServletConfig(name: string): ServletConfig {
@@ -277,7 +279,7 @@ export class HttpServletContainer implements ServletContainer {
         return idx > -1 ? this.config.servlets[idx] : null;
     }
 
-    protected initServlet(handlers: string[]): Servlet[] {
+    protected initServlets(handlers: string[]): Servlet[] {
         let servlets: Servlet[] = [];
         handlers.forEach(name => {
             let servlet: Servlet = this.di.get(name);

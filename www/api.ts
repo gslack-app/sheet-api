@@ -18,7 +18,7 @@ export class ApiServlet extends HttpServlet {
     }
 
     async doGet(req: ServletRequest, res: ServletResponse): Promise<void> {
-        let { resource, id } = req.var['_get_'];
+        let { resource, id, spreadsheetId } = req.var['_get_'];
         let query: string = req.param.query;
         let offset: number = id || req.param.offset || 1;
         let limit: number = id ? 1 : req.param.limit;
@@ -26,7 +26,7 @@ export class ApiServlet extends HttpServlet {
         offset *= 1;
         limit *= 1;
         limit = limit ? (limit > this.MaxPageSize ? this.MaxPageSize : limit) : this.DefaultPageSize;
-        this.adapter.init({ name: resource });
+        this.adapter.init({ name: resource, id: spreadsheetId });
         let cacheId = this.adapter.getSessionId();
         let data = this.cacheSvc.get(cacheId);
 
@@ -55,11 +55,11 @@ export class ApiServlet extends HttpServlet {
     }
 
     async doPost(req: ServletRequest, res: ServletResponse): Promise<void> {
-        let { action, resource, id } = req.var['_post_'];
+        let { action, resource, id, spreadsheetId } = req.var['_post_'];
         let content: string = req.postData;
         let target: any = content || null;
         let source: any;
-        this.adapter.init({ name: resource });
+        this.adapter.init({ name: resource, id: spreadsheetId });
 
         if (id) {
             if (id > this.adapter.getTotal()) {
@@ -100,10 +100,12 @@ export class ApiServlet extends HttpServlet {
 
     protected getLocalHelpers(): any {
         return {
+            eq: (str1: string, str2: string) => str1.toLocaleLowerCase() === str2.toLocaleLowerCase(),
+            neq: (str1: string, str2: string) => str1.toLocaleLowerCase() !== str2.toLocaleLowerCase(),
             left: (str: string, len: number) => str.substr(0, len),
             right: (str: string, len: number) => str.substr(str.length - len, str.length),
-            like: (str: string, sub: string) => str.indexOf(sub) >= 0,
-            notLike: (str: string, sub: string) => str.indexOf(sub) < 0,
+            like: (str: string, sub: string) => str.includes(sub),
+            notLike: (str: string, sub: string) => !str.includes(sub),
             empty: (str: string) => str ? str.trim().length == 0 : true,
             notEmpty: (str: string) => str ? str.trim().length > 0 : false
         }
