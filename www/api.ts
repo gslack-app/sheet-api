@@ -38,13 +38,7 @@ export class ApiServlet extends HttpServlet {
 
         let results: any[] = data;
         if (query)
-            results = jsonQuery(query,
-                {
-                    data: data,
-                    force: [],
-                    locals: this.getLocalHelpers(),
-                    allowRegexp: true
-                }).value;
+            results = doQuery(query, data);
         let subset = results.slice(offset - 1, offset - 1 + limit);
         res.json({
             total: id ? subset.length : (query ? results.length : this.adapter.getTotal()),
@@ -97,19 +91,6 @@ export class ApiServlet extends HttpServlet {
             this.cacheSvc.remove(cacheId);
         }
     }
-
-    protected getLocalHelpers(): any {
-        return {
-            eq: (str1: string, str2: string) => str1.toLocaleLowerCase() === str2.toLocaleLowerCase(),
-            neq: (str1: string, str2: string) => str1.toLocaleLowerCase() !== str2.toLocaleLowerCase(),
-            left: (str: string, len: number) => str.substr(0, len),
-            right: (str: string, len: number) => str.substr(str.length - len, str.length),
-            like: (str: string, sub: string) => str.includes(sub),
-            notLike: (str: string, sub: string) => !str.includes(sub),
-            empty: (str: string) => str ? str.trim().length == 0 : true,
-            notEmpty: (str: string) => str ? str.trim().length > 0 : false
-        }
-    }
 }
 
 export class ApiNotFoundHandler implements NotFoundHandler {
@@ -120,6 +101,29 @@ export class ApiNotFoundHandler implements NotFoundHandler {
     doPost(): GoogleAppsScript.Content.TextOutput | GoogleAppsScript.HTML.HtmlOutput {
         return json(getStatusObject(HttpStatusCode.NOT_FOUND));
     }
+}
+
+function getLocalHelpers(): any {
+    return {
+        eq: (str1: string, str2: string) => str1.toLowerCase() === str2.toLowerCase(),
+        neq: (str1: string, str2: string) => str1.toLowerCase() !== str2.toLowerCase(),
+        left: (str: string, len: number) => str.substr(0, len),
+        right: (str: string, len: number) => str.substr(str.length - len, str.length),
+        like: (str: string, sub: string) => str.includes(sub),
+        notLike: (str: string, sub: string) => !str.includes(sub),
+        empty: (str: string) => str ? str.trim().length == 0 : true,
+        notEmpty: (str: string) => str ? str.trim().length > 0 : false
+    }
+}
+
+export function doQuery(query: string, data: any): any {
+    return jsonQuery(query,
+        {
+            data: data,
+            force: [],
+            locals: getLocalHelpers(),
+            allowRegexp: true
+        }).value;
 }
 
 export function getStatusObject(status: HttpStatusCode): any {

@@ -1,7 +1,7 @@
-import { IDataAdapter, Resource, jsonQuery } from "./interfaces";
+import { IDataAdapter, Resource } from "./interfaces";
 import { HttpFilter } from "../core/common";
-import { ILogger, ServletRequest, ICache, ServletResponse, HttpStatusCode } from "../core/interfaces";
-import { getStatusObject } from "./api";
+import { ILogger, ServletRequest, ICache, ServletResponse } from "../core/interfaces";
+import { doQuery } from "./api";
 
 export class ResourceHandler extends HttpFilter {
     private logger: ILogger;
@@ -40,11 +40,7 @@ export class ResourceHandler extends HttpFilter {
         // Mapping resource to persistent layer
         let routeParam = req.var['_get_'] || req.var['_post_'];
         let { resource } = routeParam;
-        let rec: Resource = jsonQuery(`[*name:eq(${resource})]`,
-            {
-                data: this.resources,
-                force: []
-            }).value[0];
+        let rec: Resource = doQuery(`[*name:eq(${resource})]`, this.resources)[0];
         if (rec) {
             routeParam.resource = rec.sheet;
             routeParam.spreadsheetId = this.extractId(rec.url);
