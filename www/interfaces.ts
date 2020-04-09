@@ -14,6 +14,16 @@ export interface IDataAdapter {
     getSysId(): string;
 }
 
+export interface Identity {
+    token: string;
+    roles: string[];
+}
+
+export interface Rule {
+    action: string;
+    role: string;
+}
+
 export declare function jsonQuery(query: string, options: {
     data?: any;
     rootContext?: any;

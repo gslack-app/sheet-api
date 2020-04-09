@@ -26,6 +26,7 @@
         "webpack-cli": "^3.3.11"
     },
     "dependencies": {
+        "@techteamer/acl": "^1.2.0",
         "json-query": "^2.2.2"
     }
 }

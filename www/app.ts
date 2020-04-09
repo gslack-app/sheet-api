@@ -5,6 +5,7 @@ import { HttpServletResponse, HttpServletContainer, HttpServletRequest } from ".
 import { DependencyInjection } from "../core/vendors";
 import { ApiServlet, ApiNotFoundHandler } from "./api";
 import { SpreadsheetAdapter } from "./spreadsheet-adapter";
+import { ApiGatekeeper } from "./api-gatekeeper";
 
 // declare var global: any;
 // global.doGet = doGet;
@@ -86,12 +87,19 @@ function getConfig(): WebConfig {
             // Variables at servlet scope
         },
         filters: [
-            // Filters
             {
                 name: 'LogFilter',
                 order: 0,
-                // Variables at filter scope
                 param: { level: logLevel }
+            },
+            {
+                name: 'ApiGatekeeper',
+                order: 1,
+                param: {
+                    authentication: 'Authentication',
+                    authorization: 'Authorization',
+                    spreadsheetId: null
+                }
             }
         ]
     }
@@ -104,10 +112,11 @@ function getDI(): DependencyInjection {
         { name: 'NotFoundHandler', useClass: ApiNotFoundHandler },
         { name: 'IConfiguration', useClass: Configuration },
         { name: 'ICache', useClass: CacheProvider },
-        { name: 'ILogger', useClass: StackdriverLogger },
+        { name: 'ILogger', useClass: StackdriverLogger, singleton: true },
         { name: 'IDataAdapter', useClass: SpreadsheetAdapter },
         { name: 'LogFilter', useClass: LogFilter, deps: ['ILogger'] },
         { name: 'ApiServlet', useClass: ApiServlet, deps: ['ICache', 'ILogger', 'IDataAdapter'] },
+        { name: 'ApiGatekeeper', useClass: ApiGatekeeper, deps: ['ICache', 'ILogger', 'IDataAdapter'] },
     ]);
 }
 

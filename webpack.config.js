@@ -55,7 +55,6 @@ module.exports = (env) => {
             ]
         },
         plugins: [
-            new CleanWebpackPlugin(),
             new CopyWebpackPlugin([
                 {
                     from: `${src}/views/**/**`,
@@ -90,6 +89,59 @@ module.exports = (env) => {
             globalObject: 'this',
             path: destination,
             filename: `json-query-${require("./node_modules/json-query/package.json").version.toString()}.js`
+        },
+        module: {
+            rules: [
+                {
+                    test: /\.js$/,
+                    use: {
+                        loader: 'babel-loader'
+                    }
+                }
+            ]
+        },
+        resolve: {
+            extensions: ['.js']
+        },
+        optimization: {
+            minimize: isProd,
+            minimizer: [
+                new TerserPlugin({
+                    terserOptions: {
+                        ecma: 6,
+                        warnings: false,
+                        mangle: {},
+                        compress: {
+                            drop_console: false,
+                            drop_debugger: isProd
+                        },
+                        output: {
+                            beautify: !isProd
+                        }
+                    }
+                })
+            ]
+        },
+        plugins: [
+            new GasPlugin({
+                comments: false
+            })
+        ]
+    },
+    {
+        target: 'web',
+        mode: isProd ? 'production' : 'development',
+        context: __dirname,
+        devtool: false,
+        entry: {
+            acl: path.resolve(__dirname, 'node_modules', '@techteamer', 'acl', 'index.js')
+        },
+        output: {
+            libraryTarget: 'var',
+            library: 'acl',
+            globalObject: 'this',
+            path: destination,
+            filename: `acl-${require("./node_modules/@techteamer/acl/package.json").version.toString()}.js`
         },
         module: {
             rules: [

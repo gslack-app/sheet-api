@@ -90,7 +90,7 @@ export class ApiServlet extends HttpServlet {
         }
         catch (e) {
             this.logger.error(e);
-            res.json(json(getStatusObject(HttpStatusCode.INTERNAL_SERVER_ERROR))).end();
+            res.json(getStatusObject(HttpStatusCode.INTERNAL_SERVER_ERROR)).end();
         }
         finally {
             let cacheId = this.adapter.getSessionId();
@@ -137,11 +137,19 @@ export function getStatusObject(status: HttpStatusCode): any {
             return success;
         case HttpStatusCode.BAD_REQUEST:
             error.status = 400;
-            error.title = 'You sent a request that this server could not understand';
+            error.title = 'Bad Request';
+            return error;
+        case HttpStatusCode.UNAUTHORIZED:
+            error.status = 401;
+            error.title = 'Unauthorized';
+            return error;
+        case HttpStatusCode.FORBIDDEN:
+            error.status = 403;
+            error.title = 'Forbidden';
             return error;
         case HttpStatusCode.NOT_FOUND:
             error.status = 404;
-            error.title = 'The requested resource does not exist';
+            error.title = 'Not Found';
             return error;
         case HttpStatusCode.INTERNAL_SERVER_ERROR:
             error.status = 500;
