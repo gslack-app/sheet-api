@@ -1,5 +1,6 @@
 import { ApiServlet, ApiNotFoundHandler } from "./api";
 import { ApiGatekeeper } from "./api-gatekeeper";
+import { Resource } from "./interfaces";
 import { SpreadsheetAdapter } from "./spreadsheet-adapter";
 import { ResourceHandler } from "./resource-handler";
 import { Configuration, LogFilter, StackdriverLogger, CacheProvider } from "../core/common";
@@ -50,18 +51,34 @@ function authorizeScript(): void {
         Browser.msgBox(appName, message, Browser.Buttons.OK);
     }
     catch (err) {
-        Browser.msgBox(err);
+        Browser.msgBox(appName, err, Browser.Buttons.OK);
     }
 }
 
 function clearCache(): void {
+    // Clear system cache
     let ss = SpreadsheetApp.getActiveSpreadsheet();
     let id = ss.getId();
     let cacheSvc: CacheProvider = getDI().get('ICache');
+    let caches: string[] = [];
     ss.getSheets().forEach(sheet => {
-        cacheSvc.remove(`${id}.${sheet.getName()}`);
+        let cacheId = `${id}.${sheet.getName()}`;
+        caches.push(cacheId);
+        cacheSvc.remove(cacheId);
     });
-    Browser.msgBox('Cache cleaned up');
+
+    // Clear data cache
+    let adapter = new SpreadsheetAdapter();
+    adapter.init({ name: 'Resources' });
+    let resources: Resource[] = adapter.select();
+    resources.forEach(res => {
+        let regex = /spreadsheets\/d\/(?<spreadsheetId>[a-zA-Z0-9-_]+)/i;
+        const { groups: { spreadsheetId } } = regex.exec(res.url) as any;
+        let cacheId = `${spreadsheetId}.${res.name.trim()}`;
+        caches.push(cacheId);
+        cacheSvc.remove(cacheId);
+    });
+    Browser.msgBox(appName, `The cache \\n${caches.join('\\n  ')}\\nare cleaned up`, Browser.Buttons.OK);
 }
 
 function getConfig(): WebConfig {
@@ -134,11 +151,4 @@ function getDI(): DependencyInjection {
         { name: 'ApiGatekeeper', useClass: ApiGatekeeper, deps: ['ICache', 'ILogger', 'IDataAdapter'] },
         { name: 'ResourceHandler', useClass: ResourceHandler, deps: ['ICache', 'ILogger', 'IDataAdapter'] }
     ]);
-}
-
-function a() {
-    let sa = new SpreadsheetAdapter();
-    sa.init({ name: 'Customers' });
-    let obj = sa.getEmptyRow('');
-    Logger.log(JSON.stringify(obj));
 }
