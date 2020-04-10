@@ -1,8 +1,8 @@
-import { getStatusObject, doQuery } from "./api";
 import { IDataAdapter, Identity, Rule, IACLService } from "./interfaces";
 import { HttpFilter } from "../core/common";
 import { ILogger, ServletRequest, ServletResponse, ICache, HttpStatusCode } from "../core/interfaces";
 import { ACLService } from '@techteamer/acl';
+import { getStatusObject, doQuery } from "./functions";
 
 export class ApiGatekeeper extends HttpFilter {
     private logger: ILogger;

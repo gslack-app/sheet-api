@@ -1,7 +1,7 @@
-import { doQuery } from "./api";
 import { IDataAdapter, Resource } from "./interfaces";
 import { HttpFilter } from "../core/common";
 import { ILogger, ServletRequest, ICache, ServletResponse } from "../core/interfaces";
+import { doQuery, extractSpreadsheetId } from "./functions";
 
 export class ResourceHandler extends HttpFilter {
     private cacheSvc: ICache;
@@ -43,13 +43,7 @@ export class ResourceHandler extends HttpFilter {
         let rec: Resource = doQuery(`[*name:eq(${resource})]`, this.resources)[0];
         if (rec) {
             routeParam.resource = rec.sheet;
-            routeParam.spreadsheetId = this.extractId(rec.url);
+            routeParam.spreadsheetId = extractSpreadsheetId(rec.url);
         }
-    }
-
-    private extractId(url: string): string {
-        let regex = /spreadsheets\/d\/(?<spreadsheetId>[a-zA-Z0-9-_]+)/i;
-        const { groups: { spreadsheetId } } = regex.exec(url) as any;
-        return spreadsheetId;
     }
 }

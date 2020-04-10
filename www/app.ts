@@ -7,13 +7,15 @@ import { Configuration, LogFilter, StackdriverLogger, CacheProvider } from "../c
 import { LogLevel, WebConfig } from "../core/interfaces";
 import { HttpServletResponse, HttpServletContainer, HttpServletRequest } from "../core/servlet";
 import { DependencyInjection } from "../core/vendors";
+import { extractSpreadsheetId } from "./functions";
 
 declare var global: any;
 global.doGet = doGet;
 global.doPost = doPost;
 global.onOpen = onOpen;
 global.authorizeScript = authorizeScript;
-global.clearCache = clearCache;
+global.clearSystemCache = clearSystemCache;
+global.clearDataCache = clearDataCache;
 let appName: string = 'Sheet API';
 
 function doGet(request: any): any {
@@ -33,7 +35,8 @@ function onOpen(e: any): void {
         var spreadsheet = SpreadsheetApp.getActive();
         var menuItems = [
             { name: 'Authorize', functionName: 'authorizeScript' },
-            { name: 'Clear Cache', functionName: 'clearCache' },
+            { name: 'Clear System Cache', functionName: 'clearSystemCache' },
+            { name: 'Clear Data Cache', functionName: 'clearDataCache' }
         ];
         spreadsheet.addMenu(appName, menuItems);
     }
@@ -55,26 +58,35 @@ function authorizeScript(): void {
     }
 }
 
-function clearCache(): void {
-    // Clear system cache
+function clearDataCache(): void {
     let ss = SpreadsheetApp.getActiveSpreadsheet();
     let id = ss.getId();
-    let cacheSvc: CacheProvider = getDI().get('ICache');
+    let di = getDI();
+    let cacheSvc: CacheProvider = di.get('ICache');
     let caches: string[] = [];
-    ss.getSheets().forEach(sheet => {
-        let cacheId = `${id}.${sheet.getName()}`;
-        caches.push(cacheId);
-        cacheSvc.remove(cacheId);
-    });
 
     // Clear data cache
-    let adapter = new SpreadsheetAdapter();
+    let adapter = di.get('IDataAdapter');
     adapter.init({ name: 'Resources' });
     let resources: Resource[] = adapter.select();
     resources.forEach(res => {
-        let regex = /spreadsheets\/d\/(?<spreadsheetId>[a-zA-Z0-9-_]+)/i;
-        const { groups: { spreadsheetId } } = regex.exec(res.url) as any;
-        let cacheId = `${spreadsheetId}.${res.name.trim()}`;
+        let spreadsheetId = extractSpreadsheetId(res.url) || id;
+        let cacheId = `${spreadsheetId}.${res.sheet.trim()}`;
+        caches.push(cacheId);
+        cacheSvc.remove(cacheId);
+    });
+    Browser.msgBox(appName, `The cache \\n${caches.join('\\n  ')}\\nare cleaned up`, Browser.Buttons.OK);
+}
+
+function clearSystemCache(): void {
+    // Clear system cache
+    let ss = SpreadsheetApp.getActiveSpreadsheet();
+    let id = ss.getId();
+    let di = getDI();
+    let cacheSvc: CacheProvider = di.get('ICache');
+    let caches: string[] = [];
+    ss.getSheets().forEach(sheet => {
+        let cacheId = `${id}.${sheet.getName()}`;
         caches.push(cacheId);
         cacheSvc.remove(cacheId);
     });

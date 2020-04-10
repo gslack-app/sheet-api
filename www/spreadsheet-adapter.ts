@@ -143,6 +143,6 @@ export class SpreadsheetAdapter {
     }
 
     protected normalize(name: string): string {
-        return name.replace(/[^\w_$]/, '_');
+        return name.trim().replace(/[^\w_$]/, '_');
     }
 }
