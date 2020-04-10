@@ -1,7 +1,9 @@
+
+import { IDataAdapter } from "./interfaces";
 import { ILogger, ServletRequest, ServletResponse, NotFoundHandler, ICache, HttpStatusCode } from "../core/interfaces";
 import { HttpServlet } from "../core/servlet";
 import { json } from "../core/common";
-import { IDataAdapter, jsonQuery } from "./interfaces";
+import jsonQuery from 'json-query';
 
 export class ApiServlet extends HttpServlet {
     protected readonly MaxPageSize: number = 100;

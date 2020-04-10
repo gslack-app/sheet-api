@@ -7,12 +7,12 @@ import { LogLevel, WebConfig } from "../core/interfaces";
 import { HttpServletResponse, HttpServletContainer, HttpServletRequest } from "../core/servlet";
 import { DependencyInjection } from "../core/vendors";
 
-// declare var global: any;
-// global.doGet = doGet;
-// global.doPost = doPost;
-// global.onOpen = onOpen;
-// global.authorizeScript = authorizeScript;
-// global.clearCache = clearCache;
+declare var global: any;
+global.doGet = doGet;
+global.doPost = doPost;
+global.onOpen = onOpen;
+global.authorizeScript = authorizeScript;
+global.clearCache = clearCache;
 let appName: string = 'Sheet API';
 
 function doGet(request: any): any {

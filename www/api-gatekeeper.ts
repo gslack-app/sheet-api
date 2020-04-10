@@ -1,7 +1,8 @@
 import { getStatusObject, doQuery } from "./api";
-import { IDataAdapter, Identity, Rule, acl } from "./interfaces";
+import { IDataAdapter, Identity, Rule, IACLService } from "./interfaces";
 import { HttpFilter } from "../core/common";
 import { ILogger, ServletRequest, ServletResponse, ICache, HttpStatusCode } from "../core/interfaces";
+import { ACLService } from '@techteamer/acl';
 
 export class ApiGatekeeper extends HttpFilter {
     private logger: ILogger;
@@ -9,7 +10,7 @@ export class ApiGatekeeper extends HttpFilter {
     private cacheSvc: ICache;
     private identities: Identity[];
     private rules: Rule[];
-    private aclSvc: acl.ACLService;
+    private aclSvc: IACLService;
 
     constructor({ ICache, ILogger, IDataAdapter }: any) {
         super();
@@ -37,7 +38,7 @@ export class ApiGatekeeper extends HttpFilter {
             this.cacheSvc.set(ruleCacheId, this.rules)
         }
 
-        this.aclSvc = new acl.ACLService();
+        this.aclSvc = new ACLService();
         // Get distinct roles
         let roles = Array.from(new Set(this.rules.map(r => r.role.trim().toLocaleLowerCase())));
         roles.forEach(r => this.aclSvc.createRole(r));
