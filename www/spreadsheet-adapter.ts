@@ -45,14 +45,14 @@ export class SpreadsheetAdapter {
     }
 
     select(offset?: number, limit?: number): any[] {
-        let numRowsOfHeader = this.headerRange.getLastRow() - this.headerRange.getRow() + 1;  
-        let start = offset ? offset * 1 : this.headerRange.getLastRow();      
+        let numRowsOfHeader = this.headerRange.getLastRow() - this.headerRange.getRow() + 1;
+        let start = offset ? offset * 1 : this.headerRange.getLastRow();
         offset = offset ? offset * 1 + numRowsOfHeader : this.startRow;
         limit = limit ? limit * 1 : this.numRows;
         limit = limit < this.numRows ? limit : this.numRows;
         let range = this.sheet.getRange(offset, this.startColumn, limit, this.numColumns);
         let data = range.getValues();
-        let rows: any[] = [];       
+        let rows: any[] = [];
 
         for (let i = 0; i < limit; i++) {
             let dataRow: Record<string, any> = {};
@@ -138,11 +138,15 @@ export class SpreadsheetAdapter {
         return SpreadsheetAdapter.sysId;
     }
 
+    getColumns(): string[] {
+        return this.header;
+    }
+
     protected valuesToArray(obj: any): any[] {
         return this.header.map(col => obj[col] ? obj[col] : '');
     }
 
     protected normalize(name: string): string {
-        return name.trim().replace(/[^\w_$]/, '_');
+        return name.trim();
     }
 }

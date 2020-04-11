@@ -70,3 +70,35 @@ export function getStatusObject(status: HttpStatusCode): any {
             return error;
     }
 }
+
+export function transform(list: any, options: { transform: any, add: any, remove: string[], rename: any }) {
+    return list.map(item => {
+        let newObj: any = Object.assign({}, item);
+        if (options.transform)
+            Object.keys(options.transform).forEach(i => {
+                if (newObj.hasOwnProperty(i))
+                    newObj[i] = options.transform[i](item);
+            });
+
+        if (options.add)
+            Object.keys(options.add).forEach(i => {
+                newObj[i] = options.add[i](item);
+            });
+
+        if (options.remove)
+            options.remove.forEach(i => {
+                delete newObj[i];
+            });
+
+        if (options.rename)
+            Object.keys(options.rename).forEach(i => {
+                if (newObj.hasOwnProperty(i)) {
+                    let tmp: any = {};
+                    tmp[options.rename[i]] = newObj[i];
+                    delete newObj[i];
+                    Object.assign(newObj, tmp);
+                }
+            });
+        return newObj;
+    });
+}

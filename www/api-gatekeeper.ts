@@ -1,8 +1,8 @@
 import { IDataAdapter, Identity, Rule, IACLService } from "./interfaces";
+import { getStatusObject, doQuery } from "./functions";
 import { HttpFilter } from "../core/common";
 import { ILogger, ServletRequest, ServletResponse, ICache, HttpStatusCode } from "../core/interfaces";
 import { ACLService } from '@techteamer/acl';
-import { getStatusObject, doQuery } from "./functions";
 
 export class ApiGatekeeper extends HttpFilter {
     private logger: ILogger;
@@ -27,7 +27,7 @@ export class ApiGatekeeper extends HttpFilter {
         this.identities = this.cacheSvc.get(identityCacheId);
         if (!this.identities) {
             this.identities = this.adapter.select();
-            this.cacheSvc.set(identityCacheId, this.identities)
+            this.cacheSvc.set(identityCacheId, this.identities);
         }
 
         this.adapter.init({ name: authorization });
@@ -35,7 +35,7 @@ export class ApiGatekeeper extends HttpFilter {
         this.rules = this.cacheSvc.get(ruleCacheId);
         if (!this.rules) {
             this.rules = this.adapter.select();
-            this.cacheSvc.set(ruleCacheId, this.rules)
+            this.cacheSvc.set(ruleCacheId, this.rules);
         }
 
         this.aclSvc = new ACLService();

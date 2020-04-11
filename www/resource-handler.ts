@@ -24,7 +24,7 @@ export class ResourceHandler extends HttpFilter {
         this.resources = this.cacheSvc.get(resourceCacheId);
         if (!this.resources) {
             this.resources = this.adapter.select();
-            this.cacheSvc.set(resourceCacheId, this.resources)
+            this.cacheSvc.set(resourceCacheId, this.resources);
         }
     }
 
@@ -42,6 +42,8 @@ export class ResourceHandler extends HttpFilter {
         let { resource } = routeParam;
         let rec: Resource = doQuery(`[*name:eq(${resource})]`, this.resources)[0];
         if (rec) {
+            // Store the old value in _prop_ format
+            routeParam['_resource_'] = resource;
             routeParam.resource = rec.sheet;
             routeParam.spreadsheetId = extractSpreadsheetId(rec.url);
         }

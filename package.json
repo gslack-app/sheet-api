@@ -24,6 +24,7 @@
     },
     "dependencies": {
         "@techteamer/acl": "^1.2.0",
+        "f-validator": "^1.0.2",
         "json-query": "^2.2.2"
     }
 }

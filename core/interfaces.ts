@@ -122,7 +122,7 @@ export interface ILogger {
 
 export interface ICache {
     setExpiration(value: number): void;
-    get(key: string): any;
+    get(key: string, type?: 'boolean' | 'number' | 'string' | 'object'): any;
     set(key: string, value: any): void;
     remove(key: string): void;
     removeAll(keys: string[]): void;

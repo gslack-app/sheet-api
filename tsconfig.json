@@ -54,7 +54,7 @@
     "include": [
         "core/**/*", 
         "test/**/*", 
-        "wwww/**/*",
+        "wwww/**/*", "www/enhanced-cache.ts",
     ],
     "exclude": [
         "node_modules/**/*",

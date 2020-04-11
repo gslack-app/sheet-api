@@ -12,6 +12,7 @@ export interface IDataAdapter {
     getTotal(): number;
     getSessionId(): string;
     getSysId(): string;
+    getColumns(): string[];
 }
 
 export interface Identity {
@@ -23,6 +24,16 @@ export interface Resource {
     name: string;
     url: string;
     sheet: string;
+}
+
+export interface Schema {
+    name: string;
+    column: string;
+    alias: string;
+    primary: boolean;
+    default: any;
+    validation: string;
+    format: string;
 }
 
 export interface Rule {

@@ -79,7 +79,7 @@ export class CacheProvider implements ICache {
         this.expiration = value;
     }
 
-    get(key: string): any {
+    get(key: string, type?: 'boolean' | 'number' | 'string' | 'object'): any {
         let value: string;
         let obj: any = null;
         value = this.provider.get(key);
@@ -147,7 +147,7 @@ export class HttpFilter implements Filter {
 
     beforePost(request: ServletRequest, response: ServletResponse): void {
     }
-    
+
     afterPost(request: ServletRequest, response: ServletResponse): void {
     }
 }

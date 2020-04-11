@@ -1,9 +1,10 @@
 import { ApiServlet, ApiNotFoundHandler } from "./api";
 import { ApiGatekeeper } from "./api-gatekeeper";
+import { EnhancedCache } from "./enhanced-cache";
 import { Resource } from "./interfaces";
 import { SpreadsheetAdapter } from "./spreadsheet-adapter";
 import { ResourceHandler } from "./resource-handler";
-import { Configuration, LogFilter, StackdriverLogger, CacheProvider } from "../core/common";
+import { Configuration, LogFilter, StackdriverLogger } from "../core/common";
 import { LogLevel, WebConfig } from "../core/interfaces";
 import { HttpServletResponse, HttpServletContainer, HttpServletRequest } from "../core/servlet";
 import { DependencyInjection } from "../core/vendors";
@@ -62,7 +63,7 @@ function clearDataCache(): void {
     let ss = SpreadsheetApp.getActiveSpreadsheet();
     let id = ss.getId();
     let di = getDI();
-    let cacheSvc: CacheProvider = di.get('ICache');
+    let cacheSvc: any = di.get('ICache');
     let caches: string[] = [];
 
     // Clear data cache
@@ -83,7 +84,7 @@ function clearSystemCache(): void {
     let ss = SpreadsheetApp.getActiveSpreadsheet();
     let id = ss.getId();
     let di = getDI();
-    let cacheSvc: CacheProvider = di.get('ICache');
+    let cacheSvc: any = di.get('ICache');
     let caches: string[] = [];
     ss.getSheets().forEach(sheet => {
         let cacheId = `${id}.${sheet.getName()}`;
@@ -100,7 +101,10 @@ function getConfig(): WebConfig {
         description: 'Sheet API',
         servlets: [
             {
-                name: 'ApiServlet'
+                name: 'ApiServlet',
+                param: {
+                    schemas: 'Schemas'
+                }
             }
         ],
         routes: [
@@ -155,7 +159,7 @@ function getDI(): DependencyInjection {
         { name: 'ServletResponse', useClass: HttpServletResponse },
         { name: 'NotFoundHandler', useClass: ApiNotFoundHandler },
         { name: 'IConfiguration', useClass: Configuration },
-        { name: 'ICache', useClass: CacheProvider },
+        { name: 'ICache', useClass: EnhancedCache },
         { name: 'ILogger', useClass: StackdriverLogger, singleton: true },
         { name: 'IDataAdapter', useClass: SpreadsheetAdapter },
         { name: 'LogFilter', useClass: LogFilter, deps: ['ILogger'] },
