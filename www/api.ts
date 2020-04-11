@@ -99,7 +99,7 @@ export class ApiServlet extends HttpServlet {
             res.json(obj, HttpStatusCode.OK).end();
         }
         catch (e) {
-            this.logger.error(e);
+            this.logger && this.logger.error(`ApiServlet -> ${e.stack}`);
             res.json(getStatusObject(HttpStatusCode.INTERNAL_SERVER_ERROR)).end();
         }
         finally {

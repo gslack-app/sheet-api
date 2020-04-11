@@ -68,10 +68,12 @@ export class StackdriverLogger implements ILogger {
 }
 
 export class CacheProvider implements ICache {
-    private expiration: number = 25 * 60;
+    private logger: ILogger;
+    private expiration: number = 20 * 60;
     private provider: GoogleAppsScript.Cache.Cache;
 
-    constructor() {
+    constructor({ ILogger }: any) {
+        this.logger = ILogger;
         this.provider = CacheService.getScriptCache();
     }
 
@@ -79,7 +81,7 @@ export class CacheProvider implements ICache {
         this.expiration = value;
     }
 
-    get(key: string, type?: 'boolean' | 'number' | 'string' | 'object'): any {
+    get(key: string): any {
         let value: string;
         let obj: any = null;
         value = this.provider.get(key);
@@ -89,7 +91,7 @@ export class CacheProvider implements ICache {
                 obj = JSON.parse(value);
             }
             catch (e) {
-                console.error(e);
+                this.logger && this.logger.error(`CacheProvider -> ${e.stack}`);
             }
         }
         return obj;
@@ -101,7 +103,7 @@ export class CacheProvider implements ICache {
             this.provider.put(key, json, this.expiration);
         }
         catch (e) {
-            console.error(e);
+            this.logger && this.logger.error(`CacheProvider -> ${e.stack}`);
         }
     }
 
