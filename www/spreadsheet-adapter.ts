@@ -1,3 +1,5 @@
+import { ICache } from "../core/interfaces";
+
 export class SpreadsheetAdapter {
     public static readonly sysId: string = '_rid_';
     protected sheet: GoogleAppsScript.Spreadsheet.Sheet;
@@ -5,18 +7,10 @@ export class SpreadsheetAdapter {
     protected spreadsheetId: string;
     protected header: string[];
     protected headerRange: GoogleAppsScript.Spreadsheet.Range;
+    protected cache: ICache;
 
-    init(params?: any) {
-        let { name, id, headerA1Notation } = params;
-        this.sheetName = name;
-        this.sheet = id
-            ? SpreadsheetApp.openById(id).getSheetByName(name)
-            : SpreadsheetApp.getActiveSpreadsheet().getSheetByName(name);
-        this.spreadsheetId = this.sheet.getParent().getId();
-        this.headerRange = headerA1Notation
-            ? this.sheet.getRange(headerA1Notation)
-            : this.sheet.getRange(1, 1, 1, this.lastColumn);
-        this.header = this.headerRange.getValues()[0].map(h => this.normalize(h));
+    constructor({ ICache }: any) {
+        this.cache = ICache;
     }
 
     get startRow(): number {
@@ -44,39 +38,42 @@ export class SpreadsheetAdapter {
         return this.headerRange.getNumColumns();
     }
 
-    select(offset?: number, limit?: number): any[] {
-        let numRowsOfHeader = this.headerRange.getLastRow() - this.headerRange.getRow() + 1;
-        let start = offset ? offset * 1 : this.headerRange.getLastRow();
-        offset = offset ? offset * 1 + numRowsOfHeader : this.startRow;
-        limit = limit ? limit * 1 : this.numRows;
-        limit = limit < this.numRows ? limit : this.numRows;
-        let range = this.sheet.getRange(offset, this.startColumn, limit, this.numColumns);
-        let data = range.getValues();
-        let rows: any[] = [];
+    //#region IDataAdapter
+    init(params?: any) {
+        let { name, id, headerA1Notation } = params;
+        this.sheetName = name;
+        this.sheet = id
+            ? SpreadsheetApp.openById(id).getSheetByName(name)
+            : SpreadsheetApp.getActiveSpreadsheet().getSheetByName(name);
+        this.spreadsheetId = this.sheet.getParent().getId();
+        this.headerRange = headerA1Notation
+            ? this.sheet.getRange(headerA1Notation)
+            : this.sheet.getRange(1, 1, 1, this.lastColumn);
+        this.header = this.headerRange.getValues()[0].map(h => this.normalize(h));
+    }
 
-        for (let i = 0; i < limit; i++) {
-            let dataRow: Record<string, any> = {};
-            dataRow[SpreadsheetAdapter.sysId] = start + i;
-            for (let j = 0; j < this.header.length; j++) {
-                let colName = this.header[j];
-                dataRow[colName] = data[i][j];
-            }
-            rows.push(dataRow);
+    select(offset?: number, limit?: number): any[] {
+        if (this.useCache) {
+            let data = this.loadAllToCache();
+            offset = offset ? offset : 1;
+            limit = limit ? limit : this.numRows;
+            limit = limit < this.numRows ? limit : this.numRows;
+            return data.slice(offset - 1, limit);
         }
-        return rows;
+        return this.selectDirect(offset, limit);
     }
 
     selectWhere(where: (rec: any) => boolean, start?: number, size?: number): any[] {
-        let records = this.select(start, size);
-        return records.filter(where);
+        return this.select(start, size).filter(where);
     }
 
     insert(record: any): any {
         let rowId = this.lastRow + 1;
         delete record[SpreadsheetAdapter.sysId];
-        let arr = this.valuesToArray(record);
+        let arr = this.objectToArray(record);
         this.sheet.getRange(rowId, this.startColumn, 1, arr.length).setValues([arr]);
         record[SpreadsheetAdapter.sysId] = rowId;
+        this.cleanCache();
         return record;
     }
 
@@ -85,36 +82,45 @@ export class SpreadsheetAdapter {
         let start = this.lastRow + 1;
         records.forEach(record => {
             let rowId = this.lastRow + 1;
-            let item = this.valuesToArray(record);
+            let item = this.objectToArray(record);
             record[SpreadsheetAdapter.sysId] = rowId;
             targets.push(item);
         });
         this.sheet.getRange(start, this.startColumn, records.length, this.numColumns).setValues(targets);
+        this.cleanCache();
         return records;
     }
 
     update(record: any): void {
         let rowId = record[SpreadsheetAdapter.sysId];
         if (rowId) {
-            let item = this.valuesToArray(record);
+            let item = this.objectToArray(record);
             this.sheet.getRange(rowId, this.startColumn, 1, item.length).setValues([item]);
+            this.cleanCache();
         }
     }
 
     updateBatch(records: any[]): void {
         records.forEach(record => {
-            this.update(record);
+            let rowId = record[SpreadsheetAdapter.sysId];
+            if (rowId) {
+                let item = this.objectToArray(record);
+                this.sheet.getRange(rowId, this.startColumn, 1, item.length).setValues([item]);
+            }
         });
+        this.cleanCache();
     }
 
     delete(rowId: number): void {
         this.sheet.deleteRow(rowId);
+        this.cleanCache();
     }
 
     deleteBatch(rids: number[]): void {
         rids.forEach(rid => {
-            this.delete(rid);
+            this.sheet.deleteRow(rid);
         });
+        this.cleanCache();
     }
 
     getEmptyRow(def: any): any {
@@ -141,8 +147,76 @@ export class SpreadsheetAdapter {
     getColumns(): string[] {
         return this.header;
     }
+    //#endregion
 
-    protected valuesToArray(obj: any): any[] {
+    setCache(cache: ICache) {
+        this.cache = cache;
+    }
+
+    protected cleanCache() {
+        if (this.useCache)
+            this.cache.remove(this.getSessionId());
+    }
+
+    protected get useCache(): boolean {
+        return !(this.cache === null || this.cache === undefined);
+    }
+
+    protected selectDirect(offset?: number, limit?: number): any[] {
+        let numRowsOfHeader = this.headerRange.getLastRow() - this.headerRange.getRow() + 1;
+        let start = offset ? offset * 1 : this.headerRange.getLastRow();
+        offset = offset ? offset * 1 + numRowsOfHeader : this.startRow;
+        limit = limit ? limit * 1 : this.numRows;
+        limit = limit < this.numRows ? limit : this.numRows;
+        let range = this.sheet.getRange(offset, this.startColumn, limit, this.numColumns);
+        let data = range.getValues();
+        let rows: any[] = [];
+
+        for (let i = 0; i < data.length; i++) {
+            let dataRow: Record<string, any> = {};
+            dataRow[SpreadsheetAdapter.sysId] = start + i;
+            for (let j = 0; j < this.header.length; j++) {
+                let colName = this.header[j];
+                dataRow[colName] = data[i][j];
+            }
+            rows.push(dataRow);
+        }
+        return rows;
+    }
+
+    protected loadAllToCache(): any[] {
+        let id = this.getSessionId();
+        let rows: any[] = this.cache.get(id);
+        if (!rows) {
+            let range = this.sheet.getRange(this.startRow, this.startColumn, this.numRows, this.numColumns);
+            let data = range.getValues();
+            let start = this.headerRange.getLastRow();
+            rows = [];
+
+            for (let i = 0; i < data.length; i++) {
+                let row: Record<string, any> = {};
+                row[SpreadsheetAdapter.sysId] = start + i;
+                for (let j = 0; j < this.header.length; j++) {
+                    let colName = this.header[j];
+                    row[colName] = data[i][j];
+                }
+                rows.push(row);
+            }
+            this.cache.set(id, rows);
+        }
+        return rows;
+    }
+
+    protected arrayToObject(arr: any[]): any {
+        let obj: Record<string, any> = {};
+        for (let j = 0; j < this.header.length; j++) {
+            let colName = this.header[j];
+            obj[colName] = arr[j];
+        }
+        return obj;
+    }
+
+    protected objectToArray(obj: any): any[] {
         return this.header.map(col => obj[col] ? obj[col] : '');
     }
 

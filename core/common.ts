@@ -92,6 +92,8 @@ export class CacheProvider implements ICache {
             }
             catch (e) {
                 this.logger && this.logger.error(`CacheProvider -> ${e.stack}`);
+                // Remove error key
+                this.remove(key);
             }
         }
         return obj;

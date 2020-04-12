@@ -5,7 +5,7 @@ import { Resource } from "./interfaces";
 import { SpreadsheetAdapter } from "./spreadsheet-adapter";
 import { ResourceHandler } from "./resource-handler";
 import { Configuration, LogFilter, StackdriverLogger } from "../core/common";
-import { LogLevel, WebConfig } from "../core/interfaces";
+import { LogLevel, WebConfig, ICache } from "../core/interfaces";
 import { HttpServletResponse, HttpServletContainer, HttpServletRequest } from "../core/servlet";
 import { DependencyInjection } from "../core/vendors";
 import { extractSpreadsheetId } from "./functions";
@@ -64,19 +64,16 @@ function clearDataCache(): void {
     let id = ss.getId();
     let di = getDI();
     let cacheSvc: any = di.get('ICache');
-    let caches: string[] = [];
-
-    // Clear data cache
     let adapter = di.get('IDataAdapter');
+    adapter.setCache(null);
     adapter.init({ name: 'Resources' });
     let resources: Resource[] = adapter.select();
-    resources.forEach(res => {
+    let keys: string[] = resources.map(res => {
         let spreadsheetId = extractSpreadsheetId(res.url) || id;
-        let cacheId = `${spreadsheetId}.${res.sheet.trim()}`;
-        caches.push(cacheId);
-        cacheSvc.remove(cacheId);
+        return `${spreadsheetId}.${res.sheet.trim()}`;
     });
-    Browser.msgBox(appName, `The cache \\n${caches.join('\\n  ')}\\nare cleaned up`, Browser.Buttons.OK);
+    cacheSvc.removeAll(keys);
+    Browser.msgBox(appName, `The cache \\n${keys.join('\\n  ')}\\nare cleaned up`, Browser.Buttons.OK);
 }
 
 function clearSystemCache(): void {
@@ -84,14 +81,10 @@ function clearSystemCache(): void {
     let ss = SpreadsheetApp.getActiveSpreadsheet();
     let id = ss.getId();
     let di = getDI();
-    let cacheSvc: any = di.get('ICache');
-    let caches: string[] = [];
-    ss.getSheets().forEach(sheet => {
-        let cacheId = `${id}.${sheet.getName()}`;
-        caches.push(cacheId);
-        cacheSvc.remove(cacheId);
-    });
-    Browser.msgBox(appName, `The cache \\n${caches.join('\\n  ')}\\nare cleaned up`, Browser.Buttons.OK);
+    let cacheSvc: ICache = di.get('ICache');
+    let keys: string[] = ss.getSheets().map(sheet => `${id}.${sheet.getName()}`);
+    cacheSvc.removeAll(keys);
+    Browser.msgBox(appName, `The cache \\n${keys.join('\\n  ')}\\nare cleaned up`, Browser.Buttons.OK);
 }
 
 function getConfig(): WebConfig {
@@ -161,10 +154,10 @@ function getDI(): DependencyInjection {
         { name: 'IConfiguration', useClass: Configuration },
         { name: 'ILogger', useClass: StackdriverLogger, singleton: true },
         { name: 'ICache', useClass: EnhancedCache, deps: ['ILogger'] },
-        { name: 'IDataAdapter', useClass: SpreadsheetAdapter },
+        { name: 'IDataAdapter', useClass: SpreadsheetAdapter, deps: ['ICache'] },
         { name: 'LogFilter', useClass: LogFilter, deps: ['ILogger'] },
-        { name: 'ApiServlet', useClass: ApiServlet, deps: ['ICache', 'ILogger', 'IDataAdapter'] },
-        { name: 'ApiGatekeeper', useClass: ApiGatekeeper, deps: ['ICache', 'ILogger', 'IDataAdapter'] },
-        { name: 'ResourceHandler', useClass: ResourceHandler, deps: ['ICache', 'ILogger', 'IDataAdapter'] }
+        { name: 'ApiServlet', useClass: ApiServlet, deps: ['ILogger', 'IDataAdapter'] },
+        { name: 'ApiGatekeeper', useClass: ApiGatekeeper, deps: ['ILogger', 'IDataAdapter'] },
+        { name: 'ResourceHandler', useClass: ResourceHandler, deps: ['ILogger', 'IDataAdapter'] }
     ]);
 }

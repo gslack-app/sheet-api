@@ -1,3 +1,5 @@
+import { ICache } from "../core/interfaces";
+
 export interface IDataAdapter {
     init(params?: any);
     select(offset?: number, limit?: number): any[];
@@ -13,6 +15,7 @@ export interface IDataAdapter {
     getSessionId(): string;
     getSysId(): string;
     getColumns(): string[];
+    setCache(cache: ICache): void;
 }
 
 export interface Identity {

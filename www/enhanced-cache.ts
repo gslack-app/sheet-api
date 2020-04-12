@@ -5,6 +5,15 @@ import { ICache, ILogger } from "../core/interfaces";
  * @param {Cache} cache the cache to enhance
  * @constructor
  */
+
+interface Descriptor {
+    value: string;
+    type: string;
+    ttl: number;
+    time: number;
+    keys?: string[]
+}
+
 export class EnhancedCache implements ICache {
     private logger: ILogger;
     private ttl: number = 20 * 60;
@@ -26,6 +35,8 @@ export class EnhancedCache implements ICache {
         }
         catch (e) {
             this.logger && this.logger.error(`EnhancedCache -> ${e.stack}`);
+            // Remove error key
+            this.remove(key);
             return null;
         }
     }
@@ -40,10 +51,9 @@ export class EnhancedCache implements ICache {
     }
 
     remove(key: string): void {
-        let valueDescriptor = this.getValueDescriptor(key);
-        let keys: string[] = valueDescriptor ? valueDescriptor.keys : [];
-        keys = keys || [];
-        keys.forEach(k => this._remove_(k));
+        let descriptor = this.getDescriptor(key);
+        let subKeys: string[] = descriptor && descriptor.type ? descriptor.keys : [];
+        subKeys.forEach(k => this._remove_(k));
         this._remove_(key);
     }
 
@@ -62,11 +72,11 @@ export class EnhancedCache implements ICache {
      * @return {Date} the date the entry was last updated, or null if no such key exists
      */
     getLastUpdated(key: string): Date {
-        let valueDescriptor = this.getValueDescriptor(key);
+        let valueDescriptor = this.getDescriptor(key);
         return valueDescriptor ? new Date(valueDescriptor.time) : null;
     }
 
-    private createValueDescriptor(value: any, ttl?: number): any {
+    private createDescriptor(value: any, ttl?: number): Descriptor {
         return {
             value: value,
             type: typeof value,
@@ -76,18 +86,26 @@ export class EnhancedCache implements ICache {
     }
 
     private setValue(key: string, value: any, ttl?: number): void {
-        let descriptor = this.createValueDescriptor(value, ttl);
-        this.splitLargeValue(key, descriptor);
-        this._set_(key, JSON.stringify(descriptor), ttl);
+        let descriptor = this.createDescriptor(value, ttl);
+        let jsonValue = this.splitLargeValue(key, descriptor);
+        if (jsonValue) {
+            // Big JSON value
+            // Avoid JSON.stringify twice
+            this._set_(key, jsonValue, ttl);
+        }
+        else {
+            this._set_(key, JSON.stringify(descriptor), ttl);
+        }
     }
 
     private getValue(key: string): any {
-        let descriptor = this.getValueDescriptor(key);
-        if (descriptor) {
-            this.mergeLargeValue(descriptor);
-            return JSON.parse(descriptor.value);
+        let descriptor = this.getDescriptor(key);
+        if (descriptor && descriptor.type) {
+            // Avoid JSON.parse twice
+            if (this.mergeLargeValue(descriptor))
+                return JSON.parse(descriptor.value);
         }
-        return null;
+        return descriptor;
     }
 
     private _set_(key: string, value: any, ttl?: number): void {
@@ -105,41 +123,46 @@ export class EnhancedCache implements ICache {
         return this.cache.remove(key);
     }
 
-    private getValueDescriptor(key: string) {
+    private getDescriptor(key: string): Descriptor {
         let descriptor = this._get_(key);
         return descriptor ? JSON.parse(descriptor) : null;
     }
 
-    private mergeLargeValue(descriptor: any): void {
+    private mergeLargeValue(descriptor: Descriptor): boolean {
         // If the value descriptor has 'keys' instead of 'value' - collect the values from the keys and populate the value
         if (descriptor.keys) {
-            let keys: string[] = descriptor.keys;
-            descriptor.value = keys.map(k => this._get_(k)).join('');
+            let keys = descriptor.keys;
+            let value = '';
+            this.logger && this.logger.debug(`Cache segments: ${keys.join()}`);
+            keys.forEach(k => value += this._get_(k));
+            descriptor.value = value;
             descriptor.keys = null;
+            return true;
         }
+        return false;
     }
 
-    private splitLargeValue(key: string, valueDescriptor: any): void {
+    private splitLargeValue(key: string, valueDescriptor: Descriptor): string {
         // Reference: https://developers.google.com/apps-script/reference/cache/cache#putkey,-value
         // Max cached value size: 100KB
-        // According the ECMA-262 3rd Edition Specification, each character represents a single 16-bit unit of UTF-16 text
-        const DESCRIPTOR_MARGIN = 2000;
-        const MAX_STR_LENGTH = (100 * 1024 / 2) - DESCRIPTOR_MARGIN;
+        const MAX_STR_LENGTH = 100 * 1024;
         // If the 'value' in the descriptor is a long string - split it and put in different keys, add the 'keys' to the descriptor
         let value = JSON.stringify(valueDescriptor.value);
         if (value.length > MAX_STR_LENGTH) {
             this.logger && this.logger.debug(`Splitting string value of length: ${value.length}`);
             let keys: string[] = [];
             do {
-                let k: string = '$$$' + key + keys.length;
+                let k: string = `${key}.${keys.length}`;
                 let v = value.substring(0, MAX_STR_LENGTH);
+                this._set_(k, v, valueDescriptor.ttl);
                 value = value.substring(MAX_STR_LENGTH);
                 keys.push(k);
-                this._set_(k, v, valueDescriptor.ttl);
             } while (value.length > 0);
             valueDescriptor.value = null;
             valueDescriptor.keys = keys;
+            return null;
         }
         // TODO: Maintain previous split values when putting new value in an existing key
+        return value;
     }
 }

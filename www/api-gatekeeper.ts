@@ -1,20 +1,18 @@
 import { IDataAdapter, Identity, Rule, IACLService } from "./interfaces";
 import { getStatusObject, doQuery } from "./functions";
 import { HttpFilter } from "../core/common";
-import { ILogger, ServletRequest, ServletResponse, ICache, HttpStatusCode } from "../core/interfaces";
+import { ILogger, ServletRequest, ServletResponse, HttpStatusCode } from "../core/interfaces";
 import { ACLService } from '@techteamer/acl';
 
 export class ApiGatekeeper extends HttpFilter {
     private logger: ILogger;
     private adapter: IDataAdapter;
-    private cacheSvc: ICache;
     private identities: Identity[];
     private rules: Rule[];
     private aclSvc: IACLService;
 
-    constructor({ ICache, ILogger, IDataAdapter }: any) {
+    constructor({ ILogger, IDataAdapter }: any) {
         super();
-        this.cacheSvc = ICache;
         this.logger = ILogger;
         this.adapter = IDataAdapter;
     }
@@ -23,20 +21,10 @@ export class ApiGatekeeper extends HttpFilter {
         super.init(param);
         let { authentication, authorization } = this.param;
         this.adapter.init({ name: authentication });
-        let identityCacheId = this.adapter.getSessionId();
-        this.identities = this.cacheSvc.get(identityCacheId);
-        if (!this.identities) {
-            this.identities = this.adapter.select();
-            this.cacheSvc.set(identityCacheId, this.identities);
-        }
+        this.identities = this.adapter.select();
 
         this.adapter.init({ name: authorization });
-        let ruleCacheId = this.adapter.getSessionId();
-        this.rules = this.cacheSvc.get(ruleCacheId);
-        if (!this.rules) {
-            this.rules = this.adapter.select();
-            this.cacheSvc.set(ruleCacheId, this.rules);
-        }
+        this.rules = this.adapter.select();
 
         this.aclSvc = new ACLService();
         // Get distinct roles

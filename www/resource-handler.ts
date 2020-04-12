@@ -4,14 +4,12 @@ import { ILogger, ServletRequest, ICache, ServletResponse } from "../core/interf
 import { doQuery, extractSpreadsheetId } from "./functions";
 
 export class ResourceHandler extends HttpFilter {
-    private cacheSvc: ICache;
     private logger: ILogger;
     private adapter: IDataAdapter;
     private resources: Resource[];
 
-    constructor({ ICache, ILogger, IDataAdapter }: any) {
-        super()
-        this.cacheSvc = ICache;
+    constructor({ ILogger, IDataAdapter }: any) {
+        super();
         this.logger = ILogger;
         this.adapter = IDataAdapter;
     }
@@ -20,12 +18,7 @@ export class ResourceHandler extends HttpFilter {
         super.init(param);
         let { resources } = this.param;
         this.adapter.init({ name: resources });
-        let resourceCacheId = this.adapter.getSessionId();
-        this.resources = this.cacheSvc.get(resourceCacheId);
-        if (!this.resources) {
-            this.resources = this.adapter.select();
-            this.cacheSvc.set(resourceCacheId, this.resources);
-        }
+        this.resources = this.adapter.select();
     }
 
     beforeGet(req: ServletRequest, res: ServletResponse): void {

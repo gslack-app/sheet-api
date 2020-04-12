@@ -10,12 +10,10 @@ export class ApiServlet extends HttpServlet {
     protected readonly DefaultPageSize: number = 20;
     protected logger: ILogger;
     protected adapter: IDataAdapter;
-    protected cacheSvc: ICache;
     protected schemas: Schema[];
 
-    constructor({ ICache, ILogger, IDataAdapter }: any) {
+    constructor({ ILogger, IDataAdapter }: any) {
         super();
-        this.cacheSvc = ICache;
         this.logger = ILogger;
         this.adapter = IDataAdapter;
     }
@@ -24,12 +22,7 @@ export class ApiServlet extends HttpServlet {
         super.init(param, context);
         let { schemas } = this.param;
         this.adapter.init({ name: schemas });
-        let schemasCacheId = this.adapter.getSessionId();
-        this.schemas = this.cacheSvc.get(schemasCacheId);
-        if (!this.schemas) {
-            this.schemas = this.adapter.select();
-            this.cacheSvc.set(schemasCacheId, this.schemas);
-        }
+        this.schemas = this.schemas = this.adapter.select();
     }
 
     async doGet(req: ServletRequest, res: ServletResponse): Promise<void> {
@@ -42,20 +35,12 @@ export class ApiServlet extends HttpServlet {
         limit *= 1;
         limit = limit ? (limit > this.MaxPageSize ? this.MaxPageSize : limit) : this.DefaultPageSize;
         this.adapter.init({ name: resource, id: spreadsheetId });
-        let cacheId = this.adapter.getSessionId();
-        let data = this.cacheSvc.get(cacheId);
-
-        if (!data) {
-            // Select all data & put into cache
-            data = this.transformToREST(_resource_, this.adapter.getColumns(), this.adapter.select());
-            this.cacheSvc.set(cacheId, data);
-        }
+        let data = this.transformToREST(_resource_, this.adapter.getColumns(), this.adapter.select());
 
         let results: any[] = data;
         if (query)
             results = doQuery(query, data);
         let subset = results.slice(offset - 1, offset - 1 + limit);
-        // Data transform
         res.json({
             total: id ? subset.length : (query ? results.length : this.adapter.getTotal()),
             offset: id ? 1 : offset,
@@ -101,10 +86,6 @@ export class ApiServlet extends HttpServlet {
         catch (e) {
             this.logger && this.logger.error(`ApiServlet -> ${e.stack}`);
             res.json(getStatusObject(HttpStatusCode.INTERNAL_SERVER_ERROR)).end();
-        }
-        finally {
-            let cacheId = this.adapter.getSessionId();
-            this.cacheSvc.remove(cacheId);
         }
     }
 
