@@ -35,17 +35,23 @@ export class ApiServlet extends HttpServlet {
         limit *= 1;
         limit = limit ? (limit > this.MaxPageSize ? this.MaxPageSize : limit) : this.DefaultPageSize;
         this.adapter.init({ name: resource, id: spreadsheetId });
-        let data = this.transformToREST(_resource_, this.adapter.getColumns(), this.adapter.select());
+        let allRows = this.adapter.select();
+        let columns = this.adapter.getColumns();
 
-        let results: any[] = data;
-        if (query)
-            results = doQuery(query, data);
+        let results: any[] = allRows;
+        if (query) {
+            this.logger.debug(`Orginal query: ${query}`);
+            query = this.transformQuery(_resource_, query);
+            this.logger.debug(`Modified query: ${query}`);
+            results = doQuery(query, allRows);
+        }
+
         let subset = results.slice(offset - 1, offset - 1 + limit);
         res.json({
             total: id ? subset.length : (query ? results.length : this.adapter.getTotal()),
             offset: id ? 1 : offset,
             limit: id ? 1 : limit,
-            results: subset
+            results: this.transformToREST(_resource_, columns, subset)
         }, HttpStatusCode.OK).end();
     }
 
@@ -87,6 +93,13 @@ export class ApiServlet extends HttpServlet {
             this.logger && this.logger.error(`ApiServlet -> ${e.stack}`);
             res.json(getStatusObject(HttpStatusCode.INTERNAL_SERVER_ERROR)).end();
         }
+    }
+
+    protected transformQuery(resource: string, query: string): string {
+        let recs: Schema[] = doQuery(`[*resource=${resource}]`, this.schemas);
+        if (recs.length)
+            recs.forEach(rec => query = query.replace(rec.alias, rec.column));
+        return query;
     }
 
     protected transformToREST(resource: string, columns: string[], objects: any[]): any {
