@@ -1,9 +1,11 @@
 const path = require('path');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+const TerserPlugin = require('terser-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const GasPlugin = require('gas-webpack-plugin');
 const src = path.resolve(__dirname);
 const dest = path.resolve(__dirname, 'app');
+const isProduction = process.env.NODE_ENV === 'production' || true;
 
 module.exports = (env) => {
     return {
@@ -15,9 +17,36 @@ module.exports = (env) => {
             app: path.resolve(__dirname, 'www', 'app.ts')
         },
         output: {
-            libraryTarget: 'this',
+            libraryTarget: 'var',
+            library: 'app',
             path: dest,
-            filename: `[name]-${require("./package.json").version.toString()}.js`
+            filename: `[name]-v${require("./package.json").version.toString()}.js`
+        },
+        optimization: {
+            minimize: true,
+            minimizer: [
+                new TerserPlugin({
+                    parallel: true,
+                    extractComments: false,
+                    terserOptions: {
+                        ecma: 2015,
+                        max_line_len: true,
+                        warnings: false,
+                        mangle: {},
+                        compress: {
+                            drop_console: false,
+                            drop_debugger: isProduction
+                        },
+                        output: {
+                            beautify: true,
+                            braces: true,
+                            comments: false
+                        },
+                        keep_classnames: !isProduction,
+                        keep_fnames: true,
+                    }
+                })
+            ]
         },
         module: {
             rules: [
@@ -45,8 +74,8 @@ module.exports = (env) => {
                     to: dest
                 },
                 {
-                    from: `${src}/zero.gs`,
-                    to: `${dest}/0.gs`
+                    from: `${src}/*.gs`,
+                    to: dest
                 }
             ]),
             new GasPlugin({

@@ -102,8 +102,11 @@ export class ApiServlet extends HttpServlet {
     }
 
     protected getExcludedColumns(recs: Schema[], columns: string[]): string[] {
-        let target = recs.map(r => r.column);
-        return columns.filter(col => !target.includes(col));
+        if (recs.length) {
+            let target = recs.map(r => r.column);
+            return columns.filter(col => !target.includes(col));
+        }
+        return [];
     }
 
     protected transformQuery(recs: Schema[], query: string): string {

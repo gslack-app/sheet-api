@@ -215,7 +215,7 @@ export class SpreadsheetAdapter {
     }
 
     protected objectToArray(obj: any): any[] {
-        return this.header.map(col => obj[col] ? obj[col] : null);
+        return this.header.map(col => obj[col]);
     }
 
     protected normalize(name: string): string {

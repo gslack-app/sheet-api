@@ -10,28 +10,28 @@ import { HttpServletResponse, HttpServletContainer, HttpServletRequest } from ".
 import { DependencyInjection } from "../core/vendors";
 import { extractSpreadsheetId } from "./functions";
 
-declare var global: any;
-global.doGet = doGet;
-global.doPost = doPost;
-global.onOpen = onOpen;
-global.authorizeScript = authorizeScript;
-global.clearSystemCache = clearSystemCache;
-global.clearDataCache = clearDataCache;
+// declare var global: any;
+// global.doGet = doGet;
+// global.doPost = doPost;
+// global.onOpen = onOpen;
+// global.authorizeScript = authorizeScript;
+// global.clearSystemCache = clearSystemCache;
+// global.clearDataCache = clearDataCache;
 let appName: string = 'Sheet API';
 
-function doGet(request: any): any {
+export function doGet(request: any): any {
     let container = new HttpServletContainer();
     container.init(getConfig(), getDI());
     return container.doGet(request);
 }
 
-function doPost(request: any): any {
+export function doPost(request: any): any {
     let container = new HttpServletContainer();
     container.init(getConfig(), getDI());
     return container.doPost(request);
 }
 
-function onOpen(e: any): void {
+export function onOpen(e: any): void {
     try {
         var spreadsheet = SpreadsheetApp.getActive();
         var menuItems = [
@@ -46,7 +46,7 @@ function onOpen(e: any): void {
     }
 }
 
-function authorizeScript(): void {
+export function authorizeScript(): void {
     try {
         let authInfo = ScriptApp.getAuthorizationInfo(ScriptApp.AuthMode.FULL);
         let message = authInfo.getAuthorizationStatus() == ScriptApp.AuthorizationStatus.REQUIRED
@@ -59,7 +59,7 @@ function authorizeScript(): void {
     }
 }
 
-function clearDataCache(): void {
+export function clearDataCache(): void {
     let ss = SpreadsheetApp.getActiveSpreadsheet();
     let id = ss.getId();
     let di = getDI();
@@ -76,7 +76,7 @@ function clearDataCache(): void {
     Browser.msgBox(appName, `The cache \\n${keys.join('\\n  ')}\\nare cleaned up`, Browser.Buttons.OK);
 }
 
-function clearSystemCache(): void {
+export function clearSystemCache(): void {
     // Clear system cache
     let ss = SpreadsheetApp.getActiveSpreadsheet();
     let id = ss.getId();
