@@ -16,6 +16,7 @@ export interface IDataAdapter {
     getSysId(): string;
     getColumns(): string[];
     setCache(cache: ICache): void;
+    setExcludedColumns(columns: string[]): void;
 }
 
 export interface Identity {

@@ -35,13 +35,15 @@ export class ApiServlet extends HttpServlet {
         limit *= 1;
         limit = limit ? (limit > this.MaxPageSize ? this.MaxPageSize : limit) : this.DefaultPageSize;
         this.adapter.init({ name: resource, id: spreadsheetId });
-        let allRows = this.adapter.select();
         let columns = this.adapter.getColumns();
-
+        let recSchemas = this.getSchemas(_resource_);
+        this.adapter.setExcludedColumns(this.getExcludedColumns(recSchemas, columns))
+        let allRows = this.adapter.select();
         let results: any[] = allRows;
+
         if (query) {
             this.logger.debug(`Orginal query: ${query}`);
-            query = this.transformQuery(_resource_, query);
+            query = this.transformQuery(recSchemas, query);
             this.logger.debug(`Modified query: ${query}`);
             results = doQuery(query, allRows);
         }
@@ -51,7 +53,7 @@ export class ApiServlet extends HttpServlet {
             total: id ? subset.length : (query ? results.length : this.adapter.getTotal()),
             offset: id ? 1 : offset,
             limit: id ? 1 : limit,
-            results: this.transformToREST(_resource_, columns, subset)
+            results: this.transformToREST(recSchemas, columns, subset)
         }, HttpStatusCode.OK).end();
     }
 
@@ -95,24 +97,30 @@ export class ApiServlet extends HttpServlet {
         }
     }
 
-    protected transformQuery(resource: string, query: string): string {
-        let recs: Schema[] = doQuery(`[*resource=${resource}]`, this.schemas);
+    protected getSchemas(resource: string): Schema[] {
+        return doQuery(`[*resource=${resource}]`, this.schemas);
+    }
+
+    protected getExcludedColumns(recs: Schema[], columns: string[]): string[] {
+        let target = recs.map(r => r.column);
+        return columns.filter(col => !target.includes(col));
+    }
+
+    protected transformQuery(recs: Schema[], query: string): string {
         if (recs.length)
             recs.forEach(rec => query = query.replace(rec.alias, rec.column));
         return query;
     }
 
-    protected transformToREST(resource: string, columns: string[], objects: any[]): any {
-        let recs: Schema[] = doQuery(`[*resource=${resource}]`, this.schemas);
-        let i = 0;
+    protected transformToREST(recs: Schema[], columns: string[], objects: any[]): any {
         if (recs.length) {
             let addProps: any = {};
             let transformProps: any = {};
             let renameProps: any = {};
-            let target = recs.map(r => r.column);
-            let removeProps = columns.filter(col => !target.includes(col));
+            let removeProps = this.getExcludedColumns(recs, columns);
 
-            for (const schema of recs) {
+            for (let i = 0, len = recs.length; i < len; i++) {
+                let schema = recs[i];
                 if (schema.primary)
                     addProps['_id_'] = (r) => r[schema.column];
                 renameProps[schema.column] = schema.alias;

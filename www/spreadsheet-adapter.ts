@@ -8,9 +8,11 @@ export class SpreadsheetAdapter {
     protected header: string[];
     protected headerRange: GoogleAppsScript.Spreadsheet.Range;
     protected cache: ICache;
+    protected excludedColumns: string[];
 
     constructor({ ICache }: any) {
         this.cache = ICache;
+        this.excludedColumns = [];
     }
 
     get startRow(): number {
@@ -125,7 +127,7 @@ export class SpreadsheetAdapter {
 
     getEmptyRow(def: any): any {
         let dataRow: Record<string, any> = {};
-        for (let j = 0; j < this.header.length; j++) {
+        for (let j = 0, len = this.header.length; j < len; j++) {
             let colName = this.header[j];
             dataRow[colName] = def || null;
         }
@@ -147,12 +149,15 @@ export class SpreadsheetAdapter {
     getColumns(): string[] {
         return this.header;
     }
-    //#endregion
 
     setCache(cache: ICache) {
         this.cache = cache;
     }
 
+    setExcludedColumns(columns: string[]): void {
+        this.excludedColumns = columns;
+    }
+    //#endregion
     protected cleanCache() {
         if (this.useCache)
             this.cache.remove(this.getSessionId());
@@ -172,14 +177,10 @@ export class SpreadsheetAdapter {
         let data = range.getValues();
         let rows: any[] = [];
 
-        for (let i = 0; i < data.length; i++) {
-            let dataRow: Record<string, any> = {};
-            dataRow[SpreadsheetAdapter.sysId] = start + i;
-            for (let j = 0; j < this.header.length; j++) {
-                let colName = this.header[j];
-                dataRow[colName] = data[i][j];
-            }
-            rows.push(dataRow);
+        for (let i = 0, len = data.length; i < len; i++) {
+            let row: Record<string, any> = this.arrayToObject(data[i]);
+            row[SpreadsheetAdapter.sysId] = start + i;
+            rows.push(row);
         }
         return rows;
     }
@@ -193,13 +194,9 @@ export class SpreadsheetAdapter {
             let start = this.headerRange.getLastRow();
             rows = [];
 
-            for (let i = 0; i < data.length; i++) {
-                let row: Record<string, any> = {};
+            for (let i = 0, len = data.length; i < len; i++) {
+                let row: Record<string, any> = this.arrayToObject(data[i]);
                 row[SpreadsheetAdapter.sysId] = start + i;
-                for (let j = 0; j < this.header.length; j++) {
-                    let colName = this.header[j];
-                    row[colName] = data[i][j];
-                }
                 rows.push(row);
             }
             this.cache.set(id, rows);
@@ -209,15 +206,16 @@ export class SpreadsheetAdapter {
 
     protected arrayToObject(arr: any[]): any {
         let obj: Record<string, any> = {};
-        for (let j = 0; j < this.header.length; j++) {
+        for (let j = 0, len = this.header.length; j < len; j++) {
             let colName = this.header[j];
-            obj[colName] = arr[j];
+            if (!this.excludedColumns.includes(colName))
+                obj[colName] = arr[j];
         }
         return obj;
     }
 
     protected objectToArray(obj: any): any[] {
-        return this.header.map(col => obj[col] ? obj[col] : '');
+        return this.header.map(col => obj[col] ? obj[col] : null);
     }
 
     protected normalize(name: string): string {

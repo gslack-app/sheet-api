@@ -180,7 +180,8 @@ export class HttpServletContainer implements ServletContainer {
         let res: ServletResponse = this.di.get('ServletResponse');
         req.init('GET', request);
 
-        for (let f of this.filters) {
+        for (let i = 0, len = this.filters.length; i < len; i++) {
+            let f = this.filters[i];
             f.doFilter(req, res);
             if (res.committed)
                 return res.output;
@@ -191,7 +192,7 @@ export class HttpServletContainer implements ServletContainer {
             let servlets: string[] = [];
             req.var['_get_'] = route.params;
 
-            for (let i = 0; i < route.handlers.length; i++) {
+            for (let i = 0, len = route.handlers.length; i < len; i++) {
                 let handler = route.handlers[i];
                 if (typeof handler === 'string') {
                     servlets.push(handler);
@@ -204,7 +205,7 @@ export class HttpServletContainer implements ServletContainer {
                     return handler();
                 }
             }
-            
+
             this.filters.forEach(f => f.beforeGet(req, res));
             this.initServlets(servlets).forEach(servlet => servlet.doGet(req, res));
             this.filters.forEach(f => f.afterGet(req, res));
@@ -226,7 +227,8 @@ export class HttpServletContainer implements ServletContainer {
         let res: ServletResponse = this.di.get('ServletResponse');
         req.init('POST', request);
 
-        for (let f of this.filters) {
+        for (let i = 0, len = this.filters.length; i < len; i++) {
+            let f = this.filters[i];
             f.doFilter(req, res);
             if (res.committed)
                 return res.output;
@@ -237,7 +239,7 @@ export class HttpServletContainer implements ServletContainer {
             let servlets: string[] = [];
             req.var['_post_'] = route.params;
 
-            for (let i = 0; i < route.handlers.length; i++) {
+            for (let i = 0, len = route.handlers.length; i < len; i++) {
                 let handler = route.handlers[i];
                 if (typeof handler === 'string') {
                     servlets.push(handler);
@@ -250,7 +252,7 @@ export class HttpServletContainer implements ServletContainer {
                     return handler();
                 }
             }
-            
+
             this.filters.forEach(f => f.beforePost(req, res));
             this.initServlets(servlets).forEach(servlet => servlet.doPost(req, res));
             this.filters.forEach(f => f.afterPost(req, res));
