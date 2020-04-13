@@ -4,6 +4,7 @@ import { doQuery, getStatusObject, transform } from "./functions";
 import { ILogger, ServletRequest, ServletResponse, NotFoundHandler, ICache, HttpStatusCode } from "../core/interfaces";
 import { HttpServlet } from "../core/servlet";
 import { json } from "../core/common";
+import { objectOf } from 'f-validator';
 
 export class ApiServlet extends HttpServlet {
     protected readonly MaxPageSize: number = 100;
@@ -58,7 +59,7 @@ export class ApiServlet extends HttpServlet {
     }
 
     async doPost(req: ServletRequest, res: ServletResponse): Promise<void> {
-        let { action, resource, id, spreadsheetId } = req.var['_post_'];
+        let { action, resource, id, spreadsheetId, _resource_ } = req.var['_post_'];
         let content: string = req.postData;
         let target: any = content || null;
         let source: any;
@@ -73,7 +74,18 @@ export class ApiServlet extends HttpServlet {
         }
 
         try {
-            let obj = getStatusObject(HttpStatusCode.OK);
+            let obj: any;
+            // Validate post data
+            let recSchemas = this.getSchemas(_resource_);
+            let error = this.validate(recSchemas, target);
+            if (error) {
+                obj = getStatusObject(HttpStatusCode.BAD_REQUEST);
+                obj.detail = error;
+                res.json(obj, HttpStatusCode.BAD_REQUEST).end();
+                return;
+            }
+
+            obj = getStatusObject(HttpStatusCode.OK);
             switch (action.toLowerCase()) {
                 case 'create':
                     let rec = this.adapter.insert(target);
@@ -95,6 +107,19 @@ export class ApiServlet extends HttpServlet {
             this.logger && this.logger.error(`ApiServlet -> ${e.stack}`);
             res.json(getStatusObject(HttpStatusCode.INTERNAL_SERVER_ERROR)).end();
         }
+    }
+
+    protected validate(recs: Schema[], obj: any): string {
+        let errors: string[] = [];
+        let schema: any = {};
+        // Build schema validator
+        recs.forEach(rec => {
+            // Assume that the validation expression is valid
+            schema[rec.alias] = new Function(`return ${rec.validation ? rec.validation : 'any'};`)();
+        });
+        let validator = objectOf(schema);
+        let res = validator(obj);
+        return res ? res.message : null;
     }
 
     protected getSchemas(resource: string): Schema[] {

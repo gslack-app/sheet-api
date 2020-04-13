@@ -37,7 +37,8 @@ export function getStatusObject(status: HttpStatusCode): any {
     let error: any = {
         type: 'error',
         status: 0,
-        title: null
+        title: null,
+        detail: null
     };
     let success: any = {
         type: 'success',

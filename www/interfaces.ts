@@ -34,6 +34,7 @@ export interface Schema {
     name: string;
     column: string;
     alias: string;
+    type: 'string' | 'number' | 'boolean' | 'date' | 'email' | 'url';
     primary: boolean;
     default: any;
     validation: string;
