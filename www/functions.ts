@@ -1,5 +1,6 @@
 import { HttpStatusCode } from "../core/interfaces";
 import jsonQuery from 'json-query';
+import { error, not, empty } from "f-validator";
 
 function getLocalHelpers(): any {
     return {
@@ -72,8 +73,9 @@ export function getStatusObject(status: HttpStatusCode): any {
     }
 }
 
-export function transform(list: any, options: { transform: any, add: any, remove: string[], rename: any }) {
-    return list.map(item => {
+export function transform(list: any, options: { transform?: any, add?: any, remove?: string[], rename?: any }) {
+    let source = Array.isArray(list) ? list : [list];
+    return source.map(item => {
         let newObj: any = Object.assign({}, item);
         if (options.transform)
             Object.keys(options.transform).forEach(i => {
@@ -91,15 +93,33 @@ export function transform(list: any, options: { transform: any, add: any, remove
                 delete newObj[i];
             });
 
-        if (options.rename)
+        if (options.rename) {
+            let tmp: any = {};
             Object.keys(options.rename).forEach(i => {
                 if (newObj.hasOwnProperty(i)) {
-                    let tmp: any = {};
                     tmp[options.rename[i]] = newObj[i];
                     delete newObj[i];
-                    Object.assign(newObj, tmp);
                 }
             });
+            Object.assign(newObj, tmp);
+        }
         return newObj;
     });
 }
+
+export function evalExp(exp: string, variables: any): any {
+    let args = variables ? Object.keys(variables) : [];
+    let body = `return ${exp};`;
+    let func = Function.apply(Function, variables ? args.concat(body) : null);
+    let values = variables ? args.map(a => variables[a]) : null;
+    return func.apply(null, values);
+}
+
+export const required = not(empty);
+export const blank = (s, path) => s.trim().length == 0 ? null : error(path, 'blank', s);
+
+const emailRegex = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+export const email = (s, path) => emailRegex.test(s) ? null : error(path, 'A valid email', s);
+
+const urlRegex = /((([A-Za-z]{3,9}:(?:\/\/)?)(?:[\-;:&=\+\$,\w]+@)?[A-Za-z0-9\.\-]+|(?:www\.|[\-;:&=\+\$,\w]+@)[A-Za-z0-9\.\-]+)((?:\/[\+~%\/\.\w\-_]*)?\??(?:[\-\+=&;%@\.\w_]*)#?(?:[\.\!\/\\\w]*))?)/;
+export const url = (s, path) => urlRegex.test(s) ? null : error(path, 'A valid url', s);

@@ -1,10 +1,10 @@
 
 import { IDataAdapter, Schema } from "./interfaces";
-import { doQuery, getStatusObject, transform } from "./functions";
-import { ILogger, ServletRequest, ServletResponse, NotFoundHandler, ICache, HttpStatusCode } from "../core/interfaces";
+import { doQuery, getStatusObject, transform, evalExp, email, required, url, blank } from "./functions";
+import { ILogger, ServletRequest, ServletResponse, NotFoundHandler, HttpStatusCode } from "../core/interfaces";
 import { HttpServlet } from "../core/servlet";
 import { json } from "../core/common";
-import { objectOf } from 'f-validator';
+import { error, object, array, string, number, boolean, date, regexp, Null, Undefined, empty, regex, not, any, and, or, optional, is, oneOf, like, objectOf, arrayOf } from 'f-validator';
 
 export class ApiServlet extends HttpServlet {
     protected readonly MaxPageSize: number = 100;
@@ -41,28 +41,39 @@ export class ApiServlet extends HttpServlet {
         this.adapter.setExcludedColumns(this.getExcludedColumns(recSchemas, columns))
         let allRows = this.adapter.select();
         let results: any[] = allRows;
+        let sObj: any;
 
-        if (query) {
-            this.logger.debug(`Orginal query: ${query}`);
-            query = this.transformQuery(recSchemas, query);
-            this.logger.debug(`Modified query: ${query}`);
-            results = doQuery(query, allRows);
+        try {
+            if (query) {
+                this.logger.debug(`Orginal query: ${query}`);
+                query = this.transformQuery(recSchemas, query);
+                this.logger.debug(`Modified query: ${query}`);
+                results = doQuery(query, allRows);
+            }
+
+            let subset = results.slice(offset - 1, offset - 1 + limit);
+            res.json({
+                total: id ? subset.length : (query ? results.length : this.adapter.getTotal()),
+                offset: id ? 1 : offset,
+                limit: id ? 1 : limit,
+                results: this.transformToREST(recSchemas, columns, subset)
+            }, HttpStatusCode.OK).end();
         }
-
-        let subset = results.slice(offset - 1, offset - 1 + limit);
-        res.json({
-            total: id ? subset.length : (query ? results.length : this.adapter.getTotal()),
-            offset: id ? 1 : offset,
-            limit: id ? 1 : limit,
-            results: this.transformToREST(recSchemas, columns, subset)
-        }, HttpStatusCode.OK).end();
+        catch (e) {
+            this.logger && this.logger.error(`ApiServlet -> ${e.stack}`);
+            sObj = getStatusObject(HttpStatusCode.INTERNAL_SERVER_ERROR);
+            sObj.detail = e.message;
+            res.json(sObj, HttpStatusCode.INTERNAL_SERVER_ERROR).end();
+        }
     }
 
     async doPost(req: ServletRequest, res: ServletResponse): Promise<void> {
         let { action, resource, id, spreadsheetId, _resource_ } = req.var['_post_'];
-        let content: string = req.postData;
-        let target: any = content || null;
+        let target: any = req.postData || null;
         let source: any;
+        let sObj: any;
+        let columns = this.adapter.getColumns();
+        action = action ? action.toLowerCase() : '';
         this.adapter.init({ name: resource, id: spreadsheetId });
 
         if (id) {
@@ -74,52 +85,88 @@ export class ApiServlet extends HttpServlet {
         }
 
         try {
-            let obj: any;
             // Validate post data
-            let recSchemas = this.getSchemas(_resource_);
-            let error = this.validate(recSchemas, target);
-            if (error) {
-                obj = getStatusObject(HttpStatusCode.BAD_REQUEST);
-                obj.detail = error;
-                res.json(obj, HttpStatusCode.BAD_REQUEST).end();
-                return;
-            }
+            if (['create', 'update'].includes(action)) {
+                sObj = getStatusObject(HttpStatusCode.BAD_REQUEST);
+                if (target) {
+                    let recSchemas = this.getSchemas(_resource_);
+                    let error = this.validate(recSchemas, target);
+                    if (error) {
+                        sObj.detail = error;
+                        res.json(sObj, HttpStatusCode.BAD_REQUEST).end();
+                        return;
+                    }
 
-            obj = getStatusObject(HttpStatusCode.OK);
-            switch (action.toLowerCase()) {
-                case 'create':
-                    let rec = this.adapter.insert(target);
-                    obj.results = [rec];
-                    break;
-                case 'update':
-                    Object.assign(source, target);
-                    this.adapter.update(source);
-                    obj.results = [source];
-                    break;
-                case 'delete':
-                    this.adapter.delete(source[this.adapter.getSysId()]);
-                    obj.results = [source];
-                    break;
+                    // Transform data                    
+                    sObj = getStatusObject(HttpStatusCode.OK);
+                    target = this.transformFromREST(recSchemas, target)[0];
+                    switch (action) {
+                        case 'create':
+                            let rec = this.adapter.insert(target);
+                            sObj.results = this.transformToREST(recSchemas, columns, [rec]);
+                            break;
+                        case 'update':
+                            Object.assign(source, target);
+                            this.adapter.update(source);
+                            sObj.results = this.transformToREST(recSchemas, columns, [source]);
+                            break;
+                    }
+                }
+                else {
+                    res.json(sObj, HttpStatusCode.BAD_REQUEST).end();
+                    return;
+                }
+            } else {
+                sObj = getStatusObject(HttpStatusCode.OK);
+                this.adapter.delete(source[this.adapter.getSysId()]);
+                sObj.results = [source];
             }
-            res.json(obj, HttpStatusCode.OK).end();
+            res.json(sObj, HttpStatusCode.OK).end();
         }
         catch (e) {
             this.logger && this.logger.error(`ApiServlet -> ${e.stack}`);
-            res.json(getStatusObject(HttpStatusCode.INTERNAL_SERVER_ERROR)).end();
+            sObj = getStatusObject(HttpStatusCode.INTERNAL_SERVER_ERROR);
+            sObj.detail = e.message;
+            res.json(sObj, HttpStatusCode.INTERNAL_SERVER_ERROR).end();
         }
     }
 
-    protected validate(recs: Schema[], obj: any): string {
+    protected validate(recs: Schema[], data: any): any {
+        let args = this.getValidators();
         let errors: string[] = [];
-        let schema: any = {};
-        // Build schema validator
-        recs.forEach(rec => {
-            // Assume that the validation expression is valid
-            schema[rec.alias] = new Function(`return ${rec.validation ? rec.validation : 'any'};`)();
+        let fields = recs.filter(rec => rec.validation);
+        fields.forEach(rec => {
+            // Avoid variable name duplicates with validator name
+            args[`_${rec.alias}`] = data[rec.alias];
+            let res = evalExp(`${rec.validation}(_${rec.alias}, ['${rec.alias}'])`, args);
+            if (res)
+                errors.push(`Field: ${rec.alias}. Expected: ${res.expected}. Received: ${JSON.stringify(res.received)}`);
         });
-        let validator = objectOf(schema);
-        let res = validator(obj);
-        return res ? res.message : null;
+        return errors.length ? errors : null;
+    }
+
+    protected getValidators(): any {
+        let names = ['error', 'object', 'array', 'string', 'number',
+            'boolean', 'date', 'regexp', 'Null', 'Undefined',
+            'empty', 'regex', 'not', 'any', 'and',
+            'or', 'optional', 'is', 'oneOf', 'like',
+            'objectOf', 'arrayOf',
+            // Additional validators
+            'required', 'email', 'url', 'blank'
+        ];
+        let funcs = [error, object, array, string, number,
+            boolean, date, regexp, Null, Undefined,
+            empty, regex, not, any, and,
+            or, optional, is, oneOf, like,
+            objectOf, arrayOf,
+            // Additional validators
+            required, email, url, blank
+        ];
+        let validators: any = {};
+        for (let i = 0, len = names.length; i < len; i++) {
+            validators[names[i]] = funcs[i];
+        }
+        return validators;
     }
 
     protected getSchemas(resource: string): Schema[] {
@@ -140,7 +187,7 @@ export class ApiServlet extends HttpServlet {
         return query;
     }
 
-    protected transformToREST(recs: Schema[], columns: string[], objects: any[]): any {
+    protected transformToREST(recs: Schema[], columns: string[], objects: any): any {
         if (recs.length) {
             let addProps: any = {};
             let transformProps: any = {};
@@ -171,6 +218,41 @@ export class ApiServlet extends HttpServlet {
                 transform: transformProps,
                 rename: renameProps,
                 remove: removeProps
+            });
+        }
+        return objects;
+    }
+
+    protected transformFromREST(recs: Schema[], objects: any): any {
+        if (recs.length) {
+            let transformProps: any = {};
+            let renameProps: any = {};
+
+            for (let i = 0, len = recs.length; i < len; i++) {
+                let schema = recs[i];
+                renameProps[schema.alias] = schema.column;
+                transformProps[schema.alias] = (r) => {
+                    let value: any = r[schema.alias] || schema.default;
+                    switch (schema.type) {
+                        case 'boolean':
+                            value = Boolean(value);
+                            break;
+                        case 'date':
+                            value = Date.parse(value);
+                            break;
+                        case 'number':
+                            value = Number(value);
+                            break;
+                        default:
+                            value = String(value);
+                            break;
+                    }
+                    return value;
+                };
+            }
+            return transform(objects, {
+                transform: transformProps,
+                rename: renameProps
             });
         }
         return objects;
