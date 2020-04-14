@@ -9,10 +9,14 @@ export class SpreadsheetAdapter {
     protected headerRange: GoogleAppsScript.Spreadsheet.Range;
     protected cache: ICache;
     protected excludedColumns: string[];
+    protected pkType: 'auto' | 'uuid' | 'custom';
+    protected pkColumn: string;
 
     constructor({ ICache }: any) {
         this.cache = ICache;
         this.excludedColumns = [];
+        this.pkType = 'auto';
+        this.pkColumn = null;
     }
 
     get startRow(): number {
@@ -70,25 +74,15 @@ export class SpreadsheetAdapter {
     }
 
     insert(record: any): any {
-        let rowId = this.lastRow + 1;
-        delete record[SpreadsheetAdapter.sysId];
-        let arr = this.objectToArray(record);
-        this.sheet.getRange(rowId, this.startColumn, 1, arr.length).setValues([arr]);
-        record[SpreadsheetAdapter.sysId] = rowId;
+        this._insert_(record);
         this.cleanCache();
         return record;
     }
 
     insertBatch(records: any[]): any[] {
-        let targets: any[][] = [];
-        let start = this.lastRow + 1;
         records.forEach(record => {
-            let rowId = this.lastRow + 1;
-            let item = this.objectToArray(record);
-            record[SpreadsheetAdapter.sysId] = rowId;
-            targets.push(item);
+            this._insert_(record);
         });
-        this.sheet.getRange(start, this.startColumn, records.length, this.numColumns).setValues(targets);
         this.cleanCache();
         return records;
     }
@@ -157,7 +151,44 @@ export class SpreadsheetAdapter {
     setExcludedColumns(columns: string[]): void {
         this.excludedColumns = columns;
     }
+
+    setKeyType(type: 'auto' | 'uuid' | 'custom'): void {
+        this.pkType = type;
+    }
+
+    setKeyColumn(pk: string): void {
+
+    }
     //#endregion
+    protected _insert_(record: any): any {
+        let start = this.lastRow + 1;
+        this.setKey(this.generateKey(), record);
+        let arr = this.objectToArray(record);
+        this.sheet.getRange(start, this.startColumn, 1, arr.length).setValues([arr]);
+        return record;
+    }
+
+    protected generateKey(): any {
+        switch (this.pkType) {
+            case 'auto':
+                return this.lastRow + 1;
+            case 'uuid':
+                return Utilities.getUuid();
+            default:
+                return null;
+        }
+    }
+
+    protected setKey(value: any, rec: any): any {
+        let key: any = null;
+        if (this.pkColumn)
+            key = this.pkColumn
+        else if (this.pkType == 'auto')
+            key = this.getSysId();
+        if (key)
+            rec[key] = value;
+    }
+
     protected cleanCache() {
         if (this.useCache)
             this.cache.remove(this.getSessionId());

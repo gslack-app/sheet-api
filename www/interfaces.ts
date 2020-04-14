@@ -17,6 +17,8 @@ export interface IDataAdapter {
     getColumns(): string[];
     setCache(cache: ICache): void;
     setExcludedColumns(columns: string[]): void;
+    setKeyColumn(pk: string): void;
+    setKeyType(type: 'auto' | 'uuid' | 'custom'): void;
 }
 
 export interface Identity {

@@ -10,13 +10,6 @@ import { HttpServletResponse, HttpServletContainer, HttpServletRequest } from ".
 import { DependencyInjection } from "../core/vendors";
 import { extractSpreadsheetId } from "./functions";
 
-// declare var global: any;
-// global.doGet = doGet;
-// global.doPost = doPost;
-// global.onOpen = onOpen;
-// global.authorizeScript = authorizeScript;
-// global.clearSystemCache = clearSystemCache;
-// global.clearDataCache = clearDataCache;
 let appName: string = 'Sheet API';
 
 export function doGet(request: any): any {
@@ -106,15 +99,15 @@ function getConfig(): WebConfig {
                 handler: 'ApiServlet',
                 patterns: [
                     /\/api\/v1\/(?<resource>\w+)\/?$/i,
-                    /\/api\/v1\/(?<resource>\w+)\/(?<id>\d+)\/?$/i
+                    /\/api\/v1\/(?<resource>\w+)\/(?<id>[a-zA-Z0-9-_]+)\/?$/i
                 ]
             },
             {
                 method: 'POST',
                 handler: 'ApiServlet',
                 patterns: [
-                    /\/api\/v1\/(?<action>create)\/(?<resource>\w+)\/?$/i,
-                    /\/api\/v1\/(?<action>(update|delete))\/(?<resource>\w+)\/(?<id>\d+)\/?$/i
+                    /\/api\/v1\/(?<action>(create|update|update))\/(?<resource>\w+)\/?$/i,
+                    /\/api\/v1\/(?<action>(update|delete))\/(?<resource>\w+)\/(?<id>[a-zA-Z0-9-_]+)\/?$/i
                 ]
             }
         ],
@@ -147,7 +140,7 @@ function getConfig(): WebConfig {
 };
 
 function getDI(): DependencyInjection {
-    return new DependencyInjection([//
+    return new DependencyInjection([
         { name: 'ServletRequest', useClass: HttpServletRequest },
         { name: 'ServletResponse', useClass: HttpServletResponse },
         { name: 'NotFoundHandler', useClass: ApiNotFoundHandler },

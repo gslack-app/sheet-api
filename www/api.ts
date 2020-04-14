@@ -99,11 +99,11 @@ export class ApiServlet extends HttpServlet {
 
                     // Transform data                    
                     sObj = getStatusObject(HttpStatusCode.OK);
-                    target = this.transformFromREST(recSchemas, target)[0];
+                    target = this.transformFromREST(recSchemas, target);
                     switch (action) {
                         case 'create':
-                            let rec = this.adapter.insert(target);
-                            sObj.results = this.transformToREST(recSchemas, columns, [rec]);
+                            let rec = Array.isArray(target) ? this.adapter.insertBatch(target) : this.adapter.insert(target);
+                            sObj.results = this.transformToREST(recSchemas, columns, Array.isArray(rec) ? rec : [rec]);
                             break;
                         case 'update':
                             Object.assign(source, target);
@@ -135,12 +135,15 @@ export class ApiServlet extends HttpServlet {
         let args = this.getValidators();
         let errors: string[] = [];
         let fields = recs.filter(rec => rec.validation);
-        fields.forEach(rec => {
-            // Avoid variable name duplicates with validator name
-            args[`_${rec.alias}`] = data[rec.alias];
-            let res = evalExp(`${rec.validation}(_${rec.alias}, ['${rec.alias}'])`, args);
-            if (res)
-                errors.push(`Field: ${rec.alias}. Expected: ${res.expected}. Received: ${JSON.stringify(res.received)}`);
+        let items = Array.isArray(data) ? data : [data];
+        items.forEach(item => {
+            fields.forEach(rec => {
+                // Avoid variable name duplicates with validator name
+                args[`_${rec.alias}`] = item[rec.alias];
+                let res = evalExp(`${rec.validation}(_${rec.alias}, ['${rec.alias}'])`, args);
+                if (res)
+                    errors.push(`Field: ${rec.alias}. Expected: ${res.expected}. Received: ${JSON.stringify(res.received)}`);
+            });
         });
         return errors.length ? errors : null;
     }
