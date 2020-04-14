@@ -157,7 +157,7 @@ export class SpreadsheetAdapter {
     }
 
     setKeyColumn(pk: string): void {
-
+        this.pkColumn = pk;
     }
     //#endregion
     protected _insert_(record: any): any {

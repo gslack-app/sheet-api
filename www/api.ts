@@ -35,9 +35,9 @@ export class ApiServlet extends HttpServlet {
         offset *= 1;
         limit *= 1;
         limit = limit ? (limit > this.MaxPageSize ? this.MaxPageSize : limit) : this.DefaultPageSize;
+        let recSchemas = this.getSchemas(_resource_);
         this.adapter.init({ name: resource, id: spreadsheetId });
         let columns = this.adapter.getColumns();
-        let recSchemas = this.getSchemas(_resource_);
         this.adapter.setExcludedColumns(this.getExcludedColumns(recSchemas, columns))
         let allRows = this.adapter.select();
         let results: any[] = allRows;
@@ -72,24 +72,30 @@ export class ApiServlet extends HttpServlet {
         let target: any = req.postData || null;
         let source: any;
         let sObj: any;
-        let columns = this.adapter.getColumns();
         action = action ? action.toLowerCase() : '';
         this.adapter.init({ name: resource, id: spreadsheetId });
-
-        if (id) {
-            if (id > this.adapter.getTotal()) {
-                res.json(getStatusObject(HttpStatusCode.NOT_FOUND)).end();
-                return;
-            }
-            source = this.adapter.select(id, 1)[0];
+        let columns = this.adapter.getColumns();
+        let recSchemas = this.getSchemas(_resource_);
+        // Support only singple primary key
+        let pkCol = recSchemas.filter(rec => rec.primary)[0];
+        if (pkCol) {
+            this.adapter.setKeyColumn(pkCol.column);
+            this.adapter.setKeyType(pkCol.primary as any);
         }
+
+        // if (id) {
+        //     if (id > this.adapter.getTotal()) {
+        //         res.json(getStatusObject(HttpStatusCode.NOT_FOUND)).end();
+        //         return;
+        //     }
+        //     source = this.adapter.select(id, 1)[0];
+        // }
 
         try {
             // Validate post data
             if (['create', 'update'].includes(action)) {
                 sObj = getStatusObject(HttpStatusCode.BAD_REQUEST);
                 if (target) {
-                    let recSchemas = this.getSchemas(_resource_);
                     let error = this.validate(recSchemas, target);
                     if (error) {
                         sObj.detail = error;
@@ -199,8 +205,6 @@ export class ApiServlet extends HttpServlet {
 
             for (let i = 0, len = recs.length; i < len; i++) {
                 let schema = recs[i];
-                if (schema.primary)
-                    addProps['_id_'] = (r) => r[schema.column];
                 renameProps[schema.column] = schema.alias;
                 if (schema.format) {
                     transformProps[schema.column] = (r) => {
