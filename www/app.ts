@@ -98,16 +98,14 @@ function getConfig(): WebConfig {
                 method: 'GET',
                 handler: 'ApiServlet',
                 patterns: [
-                    /\/api\/v1\/(?<resource>\w+)\/?$/i,
-                    /\/api\/v1\/(?<resource>\w+)\/(?<id>[a-zA-Z0-9-_]+)\/?$/i
+                    /\/api\/v1\/(?<resource>[\w\-_]+)\/?(?<id>[\w\-_]+)?\/?$/i
                 ]
             },
             {
                 method: 'POST',
                 handler: 'ApiServlet',
                 patterns: [
-                    /\/api\/v1\/(?<action>(create|update|update))\/(?<resource>\w+)\/?$/i,
-                    /\/api\/v1\/(?<action>(update|delete))\/(?<resource>\w+)\/(?<id>[a-zA-Z0-9-_]+)\/?$/i
+                    /\/api\/v1\/(?<action>(create|update|delete))\/(?<resource>[\w\-_]+)\/?(?<id>[\w\-_]+)?\/?$/i
                 ]
             }
         ],

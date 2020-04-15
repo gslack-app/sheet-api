@@ -73,6 +73,10 @@ export class SpreadsheetAdapter {
         return this.select(start, size).filter(where);
     }
 
+    selectByKey(id: any): any[] {
+        return this.selectWhere(r => r[this.pkColumn || this.getSysId()] == id);
+    }
+
     insert(record: any): any {
         this._insert_(record);
         this.cleanCache();
@@ -80,42 +84,28 @@ export class SpreadsheetAdapter {
     }
 
     insertBatch(records: any[]): any[] {
-        records.forEach(record => {
-            this._insert_(record);
-        });
+        records.forEach(record => this._insert_(record));
         this.cleanCache();
         return records;
     }
 
     update(record: any): void {
-        let rowId = record[SpreadsheetAdapter.sysId];
-        if (rowId) {
-            let item = this.objectToArray(record);
-            this.sheet.getRange(rowId, this.startColumn, 1, item.length).setValues([item]);
-            this.cleanCache();
-        }
+        this._update_(record);
+        this.cleanCache();
     }
 
     updateBatch(records: any[]): void {
-        records.forEach(record => {
-            let rowId = record[SpreadsheetAdapter.sysId];
-            if (rowId) {
-                let item = this.objectToArray(record);
-                this.sheet.getRange(rowId, this.startColumn, 1, item.length).setValues([item]);
-            }
-        });
+        records.forEach(record => this._update_(record));
         this.cleanCache();
     }
 
     delete(rowId: number): void {
-        this.sheet.deleteRow(rowId);
+        this._delete_(rowId);
         this.cleanCache();
     }
 
     deleteBatch(rids: number[]): void {
-        rids.forEach(rid => {
-            this.sheet.deleteRow(rid);
-        });
+        rids.forEach(rid => this._delete_(rid));
         this.cleanCache();
     }
 
@@ -160,12 +150,26 @@ export class SpreadsheetAdapter {
         this.pkColumn = pk;
     }
     //#endregion
+
     protected _insert_(record: any): any {
         let start = this.lastRow + 1;
         this.setKey(this.generateKey(), record);
         let arr = this.objectToArray(record);
         this.sheet.getRange(start, this.startColumn, 1, arr.length).setValues([arr]);
         return record;
+    }
+
+    protected _update_(record: any): void {
+        let rowId = record[this.getSysId()];
+        if (rowId) {
+            let item = this.objectToArray(record);
+            this.sheet.getRange(this.headerRange.getNumRows() + rowId, this.startColumn, 1, item.length).setValues([item]);
+        }
+    }
+
+    protected _delete_(rowId: number): void {
+        if (rowId)
+            this.sheet.deleteRow(this.headerRange.getNumRows() + rowId);
     }
 
     protected generateKey(): any {
@@ -210,7 +214,7 @@ export class SpreadsheetAdapter {
 
         for (let i = 0, len = data.length; i < len; i++) {
             let row: Record<string, any> = this.arrayToObject(data[i]);
-            row[SpreadsheetAdapter.sysId] = start + i;
+            row[this.getSysId()] = start + i;
             rows.push(row);
         }
         return rows;
@@ -227,7 +231,7 @@ export class SpreadsheetAdapter {
 
             for (let i = 0, len = data.length; i < len; i++) {
                 let row: Record<string, any> = this.arrayToObject(data[i]);
-                row[SpreadsheetAdapter.sysId] = start + i;
+                row[this.getSysId()] = start + i;
                 rows.push(row);
             }
             this.cache.set(id, rows);

@@ -29,24 +29,34 @@ export class ApiServlet extends HttpServlet {
     async doGet(req: ServletRequest, res: ServletResponse): Promise<void> {
         let { resource, id, spreadsheetId, _resource_ } = req.var['_get_'];
         let query: string = req.param.query;
-        let offset: number = id || req.param.offset || 1;
-        let limit: number = id ? 1 : req.param.limit;
+        let offset: number = id ? 1 : req.param.offset || 1;
+        let limit: number = id ? 1 : req.param.limit || this.DefaultPageSize;
         // Convert to number
         offset *= 1;
         limit *= 1;
-        limit = limit ? (limit > this.MaxPageSize ? this.MaxPageSize : limit) : this.DefaultPageSize;
-        let recSchemas = this.getSchemas(_resource_);
-        this.adapter.init({ name: resource, id: spreadsheetId });
-        let columns = this.adapter.getColumns();
-        this.adapter.setExcludedColumns(this.getExcludedColumns(recSchemas, columns))
-        let allRows = this.adapter.select();
-        let results: any[] = allRows;
-        let sObj: any;
+        limit = limit > this.MaxPageSize ? this.MaxPageSize : limit;
+        let restStatus: any;
 
         try {
-            if (query) {
+            let schemas = this.getSchemas(_resource_);
+            this.adapter.init({ name: resource, id: spreadsheetId });
+            let columns = this.adapter.getColumns();
+            this.adapter.setExcludedColumns(this.getExcludedColumns(schemas, columns));
+            let allRows = this.adapter.select();
+            let results: any[] = allRows;
+
+            let pkCol = schemas.filter(rec => rec.primary)[0];
+            if (pkCol) {
+                this.adapter.setKeyColumn(pkCol.column);
+                this.adapter.setKeyType(pkCol.primary as any);
+            }
+
+            if (id) {
+                results = doQuery(`[*${pkCol ? pkCol.column : this.adapter.getSysId()}=${id}]`, allRows);
+            }
+            else if (query) {
                 this.logger.debug(`Orginal query: ${query}`);
-                query = this.transformQuery(recSchemas, query);
+                query = this.transformQuery(schemas, query);
                 this.logger.debug(`Modified query: ${query}`);
                 results = doQuery(query, allRows);
             }
@@ -56,85 +66,89 @@ export class ApiServlet extends HttpServlet {
                 total: id ? subset.length : (query ? results.length : this.adapter.getTotal()),
                 offset: id ? 1 : offset,
                 limit: id ? 1 : limit,
-                results: this.transformToREST(recSchemas, columns, subset)
+                results: this.transformToREST(schemas, columns, subset)
             }, HttpStatusCode.OK).end();
         }
         catch (e) {
             this.logger && this.logger.error(`ApiServlet -> ${e.stack}`);
-            sObj = getStatusObject(HttpStatusCode.INTERNAL_SERVER_ERROR);
-            sObj.detail = e.message;
-            res.json(sObj, HttpStatusCode.INTERNAL_SERVER_ERROR).end();
+            restStatus = getStatusObject(HttpStatusCode.INTERNAL_SERVER_ERROR);
+            restStatus.detail = e.message;
+            res.json(restStatus, HttpStatusCode.INTERNAL_SERVER_ERROR).end();
         }
     }
 
     async doPost(req: ServletRequest, res: ServletResponse): Promise<void> {
         let { action, resource, id, spreadsheetId, _resource_ } = req.var['_post_'];
-        let target: any = req.postData || null;
-        let source: any;
-        let sObj: any;
+        let objects: any = req.postData || null;
+        let batch: string = req.param.batch;
         action = action ? action.toLowerCase() : '';
-        this.adapter.init({ name: resource, id: spreadsheetId });
-        let columns = this.adapter.getColumns();
-        let recSchemas = this.getSchemas(_resource_);
-        // Support only singple primary key
-        let pkCol = recSchemas.filter(rec => rec.primary)[0];
-        if (pkCol) {
-            this.adapter.setKeyColumn(pkCol.column);
-            this.adapter.setKeyType(pkCol.primary as any);
-        }
-
-        // if (id) {
-        //     if (id > this.adapter.getTotal()) {
-        //         res.json(getStatusObject(HttpStatusCode.NOT_FOUND)).end();
-        //         return;
-        //     }
-        //     source = this.adapter.select(id, 1)[0];
-        // }
+        let restStatus: any;
 
         try {
-            // Validate post data
-            if (['create', 'update'].includes(action)) {
-                sObj = getStatusObject(HttpStatusCode.BAD_REQUEST);
-                if (target) {
-                    let error = this.validate(recSchemas, target);
-                    if (error) {
-                        sObj.detail = error;
-                        res.json(sObj, HttpStatusCode.BAD_REQUEST).end();
-                        return;
-                    }
-
-                    // Transform data                    
-                    sObj = getStatusObject(HttpStatusCode.OK);
-                    target = this.transformFromREST(recSchemas, target);
-                    switch (action) {
-                        case 'create':
-                            let rec = Array.isArray(target) ? this.adapter.insertBatch(target) : this.adapter.insert(target);
-                            sObj.results = this.transformToREST(recSchemas, columns, Array.isArray(rec) ? rec : [rec]);
-                            break;
-                        case 'update':
-                            Object.assign(source, target);
-                            this.adapter.update(source);
-                            sObj.results = this.transformToREST(recSchemas, columns, [source]);
-                            break;
-                    }
-                }
-                else {
-                    res.json(sObj, HttpStatusCode.BAD_REQUEST).end();
-                    return;
-                }
-            } else {
-                sObj = getStatusObject(HttpStatusCode.OK);
-                this.adapter.delete(source[this.adapter.getSysId()]);
-                sObj.results = [source];
+            // Support only single primary key        
+            let schemas = this.getSchemas(_resource_);
+            let pkCol = schemas.filter(rec => rec.primary)[0];
+            this.adapter.init({ name: resource, id: spreadsheetId });
+            if (pkCol) {
+                this.adapter.setKeyColumn(pkCol.column);
+                this.adapter.setKeyType(pkCol.primary as any);
             }
-            res.json(sObj, HttpStatusCode.OK).end();
+            // Validate post data
+            restStatus = getStatusObject(HttpStatusCode.BAD_REQUEST);
+            if ((batch || ['create', 'update'].includes(action)) && !objects) {
+                res.json(restStatus, HttpStatusCode.BAD_REQUEST).end();
+                return;
+            }
+
+            let error = this.validate(schemas, objects);
+            if (error) {
+                restStatus.detail = error;
+                res.json(restStatus, HttpStatusCode.BAD_REQUEST).end();
+                return;
+            }
+            // Transform data                 
+            objects = this.transformFromREST(schemas, objects);
+            restStatus = batch ? this.processPostBatch(action) : this.processPost(action, id, objects[0], schemas);
+            res.json(restStatus, HttpStatusCode.OK).end();
         }
         catch (e) {
             this.logger && this.logger.error(`ApiServlet -> ${e.stack}`);
-            sObj = getStatusObject(HttpStatusCode.INTERNAL_SERVER_ERROR);
-            sObj.detail = e.message;
-            res.json(sObj, HttpStatusCode.INTERNAL_SERVER_ERROR).end();
+            restStatus = getStatusObject(HttpStatusCode.INTERNAL_SERVER_ERROR);
+            restStatus.detail = e.message;
+            res.json(restStatus, HttpStatusCode.INTERNAL_SERVER_ERROR).end();
         }
+    }
+
+    protected processPost(action: string, id: any, objects: any, schemas: Schema[]): any {
+        let status = getStatusObject(HttpStatusCode.OK);
+        let columns = this.adapter.getColumns();
+        if (action == 'create') {
+            this.logger.info(objects);
+            let rec = this.adapter.insert(objects);
+            status.results = this.transformToREST(schemas, columns, [rec]);
+        }
+        else {
+            let recs = this.adapter.selectByKey(id);
+            if (recs.length === 0)
+                return getStatusObject(HttpStatusCode.NOT_FOUND);
+            let source = recs[0];
+            switch (action) {
+                case 'update':
+                    Object.assign(source, objects);
+                    this.adapter.update(source);
+                    status.results = this.transformToREST(schemas, columns, [source]);
+                    break;
+                case 'delete':
+                    this.adapter.delete(source[this.adapter.getSysId()]);
+                    status.results = this.transformToREST(schemas, columns, [source]);
+                    break;
+            }
+
+        }
+        return status;
+    }
+
+    protected processPostBatch(action: string): void {
     }
 
     protected validate(recs: Schema[], data: any): any {

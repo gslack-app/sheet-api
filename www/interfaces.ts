@@ -2,6 +2,7 @@ import { ICache } from "../core/interfaces";
 
 export interface IDataAdapter {
     init(params?: any);
+    selectByKey(id: any): any[];
     select(offset?: number, limit?: number): any[];
     selectWhere(where: (rec: any) => boolean, offset?: number, limit?: number): any[];
     insert(record: any): any;
