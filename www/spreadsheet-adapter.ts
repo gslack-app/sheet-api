@@ -73,7 +73,8 @@ export class SpreadsheetAdapter {
     }
 
     selectByKey(id: any): any[] {
-        return this.selectWhere(r => r[this.pkColumn || this.getSysId()] == id);
+        let pk = typeof id === 'object' ? id[this.pkColumn || this.getSysId()] : id;
+        return this.selectWhere(r => r[this.pkColumn || this.getSysId()] == pk);
     }
 
     insert(record: any): any {
@@ -103,8 +104,10 @@ export class SpreadsheetAdapter {
         this.cleanCache();
     }
 
-    deleteBatch(rids: number[]): void {
-        rids.forEach(rid => this._delete_(rid));
+    deleteBatch(rowIds: any[]): void {
+        let rids = rowIds.map(r => typeof r === 'object' ? r[this.getSysId()] : r);
+        let i = 0;
+        rids.forEach(rid => this._delete_(rid - (i++)));
         this.cleanCache();
     }
 

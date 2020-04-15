@@ -43,6 +43,5 @@ export class ResourceHandler extends HttpFilter {
         else {
             res.json(getStatusObject(HttpStatusCode.NOT_FOUND)).end();
         }
-
     }
 }

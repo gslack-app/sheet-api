@@ -94,7 +94,7 @@ export class ApiServlet extends HttpServlet {
             }
             // Validate post data
             restStatus = getStatusObject(HttpStatusCode.BAD_REQUEST);
-            let should = batch || ['create', 'update'].includes(action);
+            let should = (batch && action !== 'delete') || ['create', 'update'].includes(action);
             if (should && !objects) {
                 res.json(restStatus, HttpStatusCode.BAD_REQUEST).end();
                 return;
@@ -106,11 +106,12 @@ export class ApiServlet extends HttpServlet {
                 res.json(restStatus, HttpStatusCode.BAD_REQUEST).end();
                 return;
             }
+
             // Transform data                 
-            objects = should ? this.transformFromREST(schemas, objects) : [];
+            objects = should ? this.transformFromREST(schemas, objects) : objects;
             restStatus = batch
-                ? this.processPostBatch(action, id, objects, schemas)
-                : this.processPost(action, id, objects[0], schemas);
+                ? this.processPostBatch(action, objects, schemas)
+                : this.processPost(action, id, objects ? objects[0] : null, schemas);
             res.json(restStatus, HttpStatusCode.OK).end();
         }
         catch (e) {
@@ -149,30 +150,41 @@ export class ApiServlet extends HttpServlet {
         return status;
     }
 
-    protected processPostBatch(action: string, id: any, objects: any, schemas: Schema[]): void {
+    protected processPostBatch(action: string, objects: any, schemas: Schema[]): void {
         let status = getStatusObject(HttpStatusCode.OK);
         let columns = this.adapter.getColumns();
         if (action == 'create') {
             let rec = this.adapter.insertBatch(objects);
-            status.results = this.transformToREST(schemas, columns, [rec]);
+            status.results = this.transformToREST(schemas, columns, rec);
         }
         else {
-            let recs = this.adapter.selectByKey(id);
-            if (recs.length === 0)
-                return getStatusObject(HttpStatusCode.NOT_FOUND);
-            let source = recs[0];
-            switch (action) {
-                case 'update':
-                    Object.assign(source, objects);
-                    this.adapter.updateBatch(source);
-                    status.results = this.transformToREST(schemas, columns, [source]);
-                    break;
-                case 'delete':
-                    this.adapter.deleteBatch(source[this.adapter.getSysId()]);
-                    status.results = this.transformToREST(schemas, columns, [source]);
-                    break;
+            let notFoundRecs: any[] = [];
+            let source = objects.map(item => {
+                let recs = this.adapter.selectByKey(item);
+                if (recs.length === 0)
+                    notFoundRecs.push(item);
+                else
+                    return recs[0];
+            });
+            if (notFoundRecs.length) {
+                status = getStatusObject(HttpStatusCode.NOT_FOUND);
+                status.detail = notFoundRecs;
+                return status;
             }
 
+            switch (action) {
+                case 'update':
+                    for (let i = 0, len = source.length; i < len; i++) {
+                        Object.assign(source[i], objects[i]);
+                    }
+                    this.adapter.updateBatch(source);
+                    status.results = this.transformToREST(schemas, columns, source);
+                    break;
+                case 'delete':
+                    this.adapter.deleteBatch(source);
+                    status.results = this.transformToREST(schemas, columns, source);
+                    break;
+            }
         }
         return status;
     }

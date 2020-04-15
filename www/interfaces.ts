@@ -10,7 +10,7 @@ export interface IDataAdapter {
     update(record: any): void;
     updateBatch(records: any[]): void;
     delete(rowId: number): void;
-    deleteBatch(rids: number[]): void;
+    deleteBatch(rids: any[]): void;
     getEmptyRow(def: any): any;
     getTotal(): number;
     getSessionId(): string;
