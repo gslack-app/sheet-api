@@ -48,7 +48,7 @@ export class ApiGatekeeper extends HttpFilter {
         }
 
         // Authorization check
-        let apiRegex = /\/api\/v1\/(?<action>(create|update|delete))?\/?(?<resource>\w+)\/?(?<id>\d+)?\/?$/i;
+        let apiRegex = /^\/api\/v1\/(?<action>(create|update|delete))?\/?(?<resource>[\w\-_]+)\/?(?<id>[\w\-_]+)?\/?$/i;
         let authorized = apiRegex.test(req.url);
         if (authorized) {
             let { groups: { action, resource } } = apiRegex.exec(req.url);
@@ -63,10 +63,10 @@ export class ApiGatekeeper extends HttpFilter {
     private getIdenity(token: string): Identity {
         if (token) {
             let rec = doQuery(`[*token=${token}]`, this.identities)[0];
-            return {
+            return rec ? {
                 token: rec.token,
                 roles: rec.roles.split(',').map(r => r.trim().toLocaleLowerCase())
-            }
+            } : null;
         }
         return null;
     }

@@ -1,4 +1,3 @@
-
 import { IDataAdapter, Schema } from "./interfaces";
 import { doQuery, getStatusObject, transform, evalExp, email, required, url, blank } from "./functions";
 import { ILogger, ServletRequest, ServletResponse, NotFoundHandler, HttpStatusCode } from "../core/interfaces";
@@ -95,20 +94,23 @@ export class ApiServlet extends HttpServlet {
             }
             // Validate post data
             restStatus = getStatusObject(HttpStatusCode.BAD_REQUEST);
-            if ((batch || ['create', 'update'].includes(action)) && !objects) {
+            let should = batch || ['create', 'update'].includes(action);
+            if (should && !objects) {
                 res.json(restStatus, HttpStatusCode.BAD_REQUEST).end();
                 return;
             }
 
-            let error = this.validate(schemas, objects);
+            let error = should ? this.validate(schemas, objects) : null;
             if (error) {
                 restStatus.detail = error;
                 res.json(restStatus, HttpStatusCode.BAD_REQUEST).end();
                 return;
             }
             // Transform data                 
-            objects = this.transformFromREST(schemas, objects);
-            restStatus = batch ? this.processPostBatch(action) : this.processPost(action, id, objects[0], schemas);
+            objects = should ? this.transformFromREST(schemas, objects) : [];
+            restStatus = batch
+                ? this.processPostBatch(action, id, objects, schemas)
+                : this.processPost(action, id, objects[0], schemas);
             res.json(restStatus, HttpStatusCode.OK).end();
         }
         catch (e) {
@@ -123,7 +125,6 @@ export class ApiServlet extends HttpServlet {
         let status = getStatusObject(HttpStatusCode.OK);
         let columns = this.adapter.getColumns();
         if (action == 'create') {
-            this.logger.info(objects);
             let rec = this.adapter.insert(objects);
             status.results = this.transformToREST(schemas, columns, [rec]);
         }
@@ -148,7 +149,32 @@ export class ApiServlet extends HttpServlet {
         return status;
     }
 
-    protected processPostBatch(action: string): void {
+    protected processPostBatch(action: string, id: any, objects: any, schemas: Schema[]): void {
+        let status = getStatusObject(HttpStatusCode.OK);
+        let columns = this.adapter.getColumns();
+        if (action == 'create') {
+            let rec = this.adapter.insertBatch(objects);
+            status.results = this.transformToREST(schemas, columns, [rec]);
+        }
+        else {
+            let recs = this.adapter.selectByKey(id);
+            if (recs.length === 0)
+                return getStatusObject(HttpStatusCode.NOT_FOUND);
+            let source = recs[0];
+            switch (action) {
+                case 'update':
+                    Object.assign(source, objects);
+                    this.adapter.updateBatch(source);
+                    status.results = this.transformToREST(schemas, columns, [source]);
+                    break;
+                case 'delete':
+                    this.adapter.deleteBatch(source[this.adapter.getSysId()]);
+                    status.results = this.transformToREST(schemas, columns, [source]);
+                    break;
+            }
+
+        }
+        return status;
     }
 
     protected validate(recs: Schema[], data: any): any {

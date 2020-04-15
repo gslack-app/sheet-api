@@ -48,10 +48,9 @@ export class SpreadsheetAdapter {
     init(params?: any) {
         let { name, id, headerA1Notation } = params;
         this.sheetName = name;
-        this.sheet = id
-            ? SpreadsheetApp.openById(id).getSheetByName(name)
-            : SpreadsheetApp.getActiveSpreadsheet().getSheetByName(name);
-        this.spreadsheetId = this.sheet.getParent().getId();
+        let ss = id ? SpreadsheetApp.openById(id) : SpreadsheetApp.getActiveSpreadsheet();
+        this.sheet = ss.getSheetByName(name);
+        this.spreadsheetId = ss.getId();
         this.headerRange = headerA1Notation
             ? this.sheet.getRange(headerA1Notation)
             : this.sheet.getRange(1, 1, 1, this.lastColumn);
@@ -177,7 +176,7 @@ export class SpreadsheetAdapter {
             case 'auto':
                 return this.lastRow + 1;
             case 'uuid':
-                return Utilities.getUuid();
+                return Utilities.getUuid().replace(/\-/g, '');
             default:
                 return null;
         }

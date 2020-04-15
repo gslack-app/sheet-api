@@ -1,7 +1,7 @@
+import { doQuery, extractSpreadsheetId, getStatusObject } from "./functions";
 import { IDataAdapter, Resource } from "./interfaces";
 import { HttpFilter } from "../core/common";
-import { ILogger, ServletRequest, ICache, ServletResponse } from "../core/interfaces";
-import { doQuery, extractSpreadsheetId } from "./functions";
+import { ILogger, ServletRequest, ICache, ServletResponse, HttpStatusCode } from "../core/interfaces";
 
 export class ResourceHandler extends HttpFilter {
     private logger: ILogger;
@@ -40,5 +40,9 @@ export class ResourceHandler extends HttpFilter {
             routeParam.resource = rec.sheet;
             routeParam.spreadsheetId = extractSpreadsheetId(rec.url);
         }
+        else {
+            res.json(getStatusObject(HttpStatusCode.NOT_FOUND)).end();
+        }
+
     }
 }
