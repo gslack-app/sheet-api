@@ -5,12 +5,12 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
 const GasPlugin = require('gas-webpack-plugin');
 const src = path.resolve(__dirname);
 const dest = path.resolve(__dirname, 'app');
-const isProduction = process.env.NODE_ENV === 'production' || true;
+const isProduction = process.env.NODE_ENV === 'production' || false;
 
 module.exports = (env) => {
     return {
         target: 'web',
-        mode: 'development',
+        mode: isProduction ? 'production' : 'development',
         context: __dirname,
         devtool: false,
         entry: {
@@ -24,6 +24,7 @@ module.exports = (env) => {
         },
         optimization: {
             minimize: true,
+            removeAvailableModules: true,
             minimizer: [
                 new TerserPlugin({
                     parallel: true,

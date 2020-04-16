@@ -82,6 +82,7 @@ export function clearSystemCache(): void {
 
 function getConfig(): WebConfig {
     let logLevel: any = PropertiesService.getScriptProperties().getProperty('app.logLevel') || LogLevel.INFO;
+    let secured: any = PropertiesService.getScriptProperties().getProperty('app.secured') || false;
     return {
         name: appName,
         description: 'Sheet API',
@@ -124,7 +125,8 @@ function getConfig(): WebConfig {
                 order: 1,
                 param: {
                     authentication: 'Authentication',
-                    authorization: 'Authorization'
+                    authorization: 'Authorization',
+                    secured: secured
                 }
             },
             {

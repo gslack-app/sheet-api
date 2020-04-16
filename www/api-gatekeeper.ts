@@ -10,6 +10,7 @@ export class ApiGatekeeper extends HttpFilter {
     private identities: Identity[];
     private rules: Rule[];
     private aclSvc: IACLService;
+    private secured: boolean;
 
     constructor({ ILogger, IDataAdapter }: any) {
         super();
@@ -19,7 +20,11 @@ export class ApiGatekeeper extends HttpFilter {
 
     init(param?: Record<string, any>): void {
         super.init(param);
-        let { authentication, authorization } = this.param;
+        let { authentication, authorization, secured } = this.param;
+        this.secured = secured;
+
+        if (!this.secured)
+            return;
         this.adapter.init({ name: authentication });
         this.identities = this.adapter.select();
 
@@ -37,6 +42,9 @@ export class ApiGatekeeper extends HttpFilter {
     }
 
     doFilter(req: ServletRequest, res: ServletResponse): void {
+        if (!this.secured)
+            return;
+            
         let { token } = req.param;
         let identity = this.getIdenity(token);
 
