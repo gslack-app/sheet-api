@@ -44,7 +44,7 @@ export class ApiGatekeeper extends HttpFilter {
     doFilter(req: ServletRequest, res: ServletResponse): void {
         if (!this.secured)
             return;
-            
+
         let { token } = req.param;
         let identity = this.getIdenity(token);
 

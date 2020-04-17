@@ -22,6 +22,12 @@ export interface IDataAdapter {
     setKeyType(type: 'auto' | 'uuid' | 'custom'): void;
 }
 
+export interface IQueryAdapter {
+    init(params?: any);
+    query(sql: string, headers: string[]): any[];
+    getColumnId(column: string): string;
+}
+
 export interface Identity {
     token: string;
     roles: string[];

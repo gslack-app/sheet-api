@@ -9,6 +9,7 @@ import { LogLevel, WebConfig, ICache } from "../core/interfaces";
 import { HttpServletResponse, HttpServletContainer, HttpServletRequest } from "../core/servlet";
 import { DependencyInjection } from "../core/vendors";
 import { extractSpreadsheetId } from "./functions";
+import { QueryAdapter } from "./query-adapter";
 
 let appName: string = 'Sheet API';
 
@@ -149,8 +150,9 @@ function getDI(): DependencyInjection {
         { name: 'ILogger', useClass: StackdriverLogger, singleton: true },
         { name: 'ICache', useClass: EnhancedCache, deps: ['ILogger'] },
         { name: 'IDataAdapter', useClass: SpreadsheetAdapter, deps: ['ICache'] },
+        { name: 'IQueryAdapter', useClass: QueryAdapter, deps: ['ILogger'] },
         { name: 'LogFilter', useClass: LogFilter, deps: ['ILogger'] },
-        { name: 'ApiServlet', useClass: ApiServlet, deps: ['ILogger', 'IDataAdapter'] },
+        { name: 'ApiServlet', useClass: ApiServlet, deps: ['ILogger', 'IQueryAdapter', 'IDataAdapter'] },
         { name: 'ApiGatekeeper', useClass: ApiGatekeeper, deps: ['ILogger', 'IDataAdapter'] },
         { name: 'ResourceHandler', useClass: ResourceHandler, deps: ['ILogger', 'IDataAdapter'] }
     ]);

@@ -1,4 +1,4 @@
-import { IDataAdapter, Schema } from "./interfaces";
+import { IDataAdapter, Schema, IQueryAdapter } from "./interfaces";
 import { doQuery, getStatusObject, transform, evalExp, email, required, url, blank } from "./functions";
 import { ILogger, ServletRequest, ServletResponse, NotFoundHandler, HttpStatusCode } from "../core/interfaces";
 import { HttpServlet } from "../core/servlet";
@@ -8,65 +8,44 @@ import { error, object, array, string, number, boolean, date, regexp, Null, Unde
 export class ApiServlet extends HttpServlet {
     protected readonly MaxPageSize: number = 100;
     protected readonly DefaultPageSize: number = 20;
+    protected queryAdapter: IQueryAdapter;
     protected logger: ILogger;
-    protected adapter: IDataAdapter;
+    protected dataAdapter: IDataAdapter;
     protected schemas: Schema[];
 
-    constructor({ ILogger, IDataAdapter }: any) {
+    constructor({ ILogger, IQueryAdapter, IDataAdapter }: any) {
         super();
         this.logger = ILogger;
-        this.adapter = IDataAdapter;
+        this.queryAdapter = IQueryAdapter;
+        this.dataAdapter = IDataAdapter;
     }
 
     init(param?: Record<string, any>, context?: Record<string, any>): void {
         super.init(param, context);
         let { schemas } = this.param;
-        this.adapter.init({ name: schemas });
-        this.schemas = this.schemas = this.adapter.select();
+        this.dataAdapter.init({ name: schemas });
+        this.schemas = this.schemas = this.dataAdapter.select();
     }
 
     async doGet(req: ServletRequest, res: ServletResponse): Promise<void> {
         let { resource, id, spreadsheetId, _resource_ } = req.var['_get_'];
-        let query: string = req.param.query;
         let offset: number = id ? 1 : req.param.offset || 1;
         let limit: number = id ? 1 : req.param.limit || this.DefaultPageSize;
         // Convert to number
         offset *= 1;
         limit *= 1;
         limit = limit > this.MaxPageSize ? this.MaxPageSize : limit;
+        let schemas = this.getSchemas(_resource_);
         let restStatus: any;
 
         try {
-            let schemas = this.getSchemas(_resource_);
-            this.adapter.init({ name: resource, id: spreadsheetId });
-            let columns = this.adapter.getColumns();
-            this.adapter.setExcludedColumns(this.getExcludedColumns(schemas, columns));
-            let allRows = this.adapter.select();
-            let results: any[] = allRows;
-
-            let pkCol = schemas.filter(rec => rec.primary)[0];
-            if (pkCol) {
-                this.adapter.setKeyColumn(pkCol.column);
-                this.adapter.setKeyType(pkCol.primary as any);
-            }
-
-            if (id) {
-                results = doQuery(`[*${pkCol ? pkCol.column : this.adapter.getSysId()}=${id}]`, allRows);
-            }
-            else if (query) {
-                this.logger.debug(`Orginal query: ${query}`);
-                query = this.transformQuery(schemas, query);
-                this.logger.debug(`Modified query: ${query}`);
-                results = doQuery(query, allRows);
-            }
-
-            let subset = results.slice(offset - 1, offset - 1 + limit);
-            res.json({
-                total: id ? subset.length : (query ? results.length : this.adapter.getTotal()),
-                offset: id ? 1 : offset,
-                limit: id ? 1 : limit,
-                results: this.transformToREST(schemas, columns, subset)
-            }, HttpStatusCode.OK).end();
+            this.queryAdapter.init({ name: resource, id: spreadsheetId });
+            let columns = schemas.map(s => this.queryAdapter.getColumnId(s.column));
+            let labels = schemas.map(s => `${this.queryAdapter.getColumnId(s.column)} '${s.alias}'`);
+            let query = `select ${columns.join()} limit ${limit} offset ${offset} label ${labels.join()}`;
+            this.logger.info(query);
+            let results = this.queryAdapter.query(query, schemas.map(s => s.alias));
+            res.json(results, HttpStatusCode.OK).end();
         }
         catch (e) {
             this.logger && this.logger.error(`ApiServlet -> ${e.stack}`);
@@ -87,10 +66,10 @@ export class ApiServlet extends HttpServlet {
             // Support only single primary key        
             let schemas = this.getSchemas(_resource_);
             let pkCol = schemas.filter(rec => rec.primary)[0];
-            this.adapter.init({ name: resource, id: spreadsheetId });
+            this.dataAdapter.init({ name: resource, id: spreadsheetId });
             if (pkCol) {
-                this.adapter.setKeyColumn(pkCol.column);
-                this.adapter.setKeyType(pkCol.primary as any);
+                this.dataAdapter.setKeyColumn(pkCol.column);
+                this.dataAdapter.setKeyType(pkCol.primary as any);
             }
             // Validate post data
             restStatus = getStatusObject(HttpStatusCode.BAD_REQUEST);
@@ -124,24 +103,24 @@ export class ApiServlet extends HttpServlet {
 
     protected processPost(action: string, id: any, objects: any, schemas: Schema[]): any {
         let status = getStatusObject(HttpStatusCode.OK);
-        let columns = this.adapter.getColumns();
+        let columns = this.dataAdapter.getColumns();
         if (action == 'create') {
-            let rec = this.adapter.insert(objects);
+            let rec = this.dataAdapter.insert(objects);
             status.results = this.transformToREST(schemas, columns, [rec]);
         }
         else {
-            let recs = this.adapter.selectByKey(id);
+            let recs = this.dataAdapter.selectByKey(id);
             if (recs.length === 0)
                 return getStatusObject(HttpStatusCode.NOT_FOUND);
             let source = recs[0];
             switch (action) {
                 case 'update':
                     Object.assign(source, objects);
-                    this.adapter.update(source);
+                    this.dataAdapter.update(source);
                     status.results = this.transformToREST(schemas, columns, [source]);
                     break;
                 case 'delete':
-                    this.adapter.delete(source[this.adapter.getSysId()]);
+                    this.dataAdapter.delete(source[this.dataAdapter.getSysId()]);
                     status.results = this.transformToREST(schemas, columns, [source]);
                     break;
             }
@@ -152,15 +131,15 @@ export class ApiServlet extends HttpServlet {
 
     protected processPostBatch(action: string, objects: any, schemas: Schema[]): void {
         let status = getStatusObject(HttpStatusCode.OK);
-        let columns = this.adapter.getColumns();
+        let columns = this.dataAdapter.getColumns();
         if (action == 'create') {
-            let rec = this.adapter.insertBatch(objects);
+            let rec = this.dataAdapter.insertBatch(objects);
             status.results = this.transformToREST(schemas, columns, rec);
         }
         else {
             let notFoundRecs: any[] = [];
             let source = objects.map(item => {
-                let recs = this.adapter.selectByKey(item);
+                let recs = this.dataAdapter.selectByKey(item);
                 if (recs.length === 0)
                     notFoundRecs.push(item);
                 else
@@ -177,11 +156,11 @@ export class ApiServlet extends HttpServlet {
                     for (let i = 0, len = source.length; i < len; i++) {
                         Object.assign(source[i], objects[i]);
                     }
-                    this.adapter.updateBatch(source);
+                    this.dataAdapter.updateBatch(source);
                     status.results = this.transformToREST(schemas, columns, source);
                     break;
                 case 'delete':
-                    this.adapter.deleteBatch(source);
+                    this.dataAdapter.deleteBatch(source);
                     status.results = this.transformToREST(schemas, columns, source);
                     break;
             }
