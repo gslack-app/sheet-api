@@ -12,6 +12,7 @@ export class ApiServlet extends HttpServlet {
     protected logger: ILogger;
     protected dataAdapter: IDataAdapter;
     protected schemas: Schema[];
+    protected queryOption: 'no_format' | 'no_values';
 
     constructor({ ILogger, IQueryAdapter, IDataAdapter }: any) {
         super();
@@ -22,7 +23,8 @@ export class ApiServlet extends HttpServlet {
 
     init(param?: Record<string, any>, context?: Record<string, any>): void {
         super.init(param, context);
-        let { schemas } = this.param;
+        let { schemas, queryOption } = this.param;
+        this.queryOption = queryOption || 'no_format';
         this.dataAdapter.init({ name: schemas });
         this.schemas = this.schemas = this.dataAdapter.select();
     }
@@ -32,7 +34,7 @@ export class ApiServlet extends HttpServlet {
         let offset: number = id ? 1 : req.param.offset || 1;
         let limit: number = id ? 1 : req.param.limit || this.DefaultPageSize;
         // Convert to number
-        offset *= 1;
+        offset *= 0;
         limit *= 1;
         limit = limit > this.MaxPageSize ? this.MaxPageSize : limit;
         let schemas = this.getSchemas(_resource_);
@@ -40,11 +42,21 @@ export class ApiServlet extends HttpServlet {
 
         try {
             this.queryAdapter.init({ name: resource, id: spreadsheetId });
-            let columns = schemas.map(s => this.queryAdapter.getColumnId(s.column));
-            let labels = schemas.map(s => `${this.queryAdapter.getColumnId(s.column)} '${s.alias}'`);
-            let query = `select ${columns.join()} limit ${limit} offset ${offset} label ${labels.join()}`;
-            this.logger.info(query);
-            let results = this.queryAdapter.query(query, schemas.map(s => s.alias));
+            this.queryAdapter.setFormat(this.queryOption == 'no_format' ? 'json' : 'csv')
+            let columns = schemas.length ? schemas.map(s => this.queryAdapter.getColumnId(s.column)) : this.queryAdapter.getColumns();
+            let selectPart = `select ${columns.join()}`;
+            // where
+            // order by
+            let limitPart = `limit ${limit}`;
+            let offsetPart = `offset ${offset}`;
+            let labels = schemas.length ? schemas.map(s => `${this.queryAdapter.getColumnId(s.column)} '${s.alias}'`) : [];
+            let labelPart = labels.length ? `label ${labels.join()}` : '';
+            let formats = schemas.map(s => s.format ? `${this.queryAdapter.getColumnId(s.column)} '${s.format}'` : null).filter(f => f);
+            let formatPart = formats.length ? `format ${formats.filter(f => f).join()}` : '';
+            let optionsPart = `options ${this.queryOption}`;
+            let query = [selectPart, limitPart, offsetPart, labelPart, formatPart, optionsPart].join(' ');
+            this.logger.debug(query);
+            let results = this.queryAdapter.query(query);
             res.json(results, HttpStatusCode.OK).end();
         }
         catch (e) {

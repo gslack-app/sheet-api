@@ -84,6 +84,7 @@ export function clearSystemCache(): void {
 function getConfig(): WebConfig {
     let logLevel: any = PropertiesService.getScriptProperties().getProperty('app.logLevel') || LogLevel.INFO;
     let secured: any = PropertiesService.getScriptProperties().getProperty('app.secured') || false;
+    let queryOption: string = PropertiesService.getScriptProperties().getProperty('app.queryOption') || 'no_format';
     return {
         name: appName,
         description: 'Sheet API',
@@ -91,7 +92,8 @@ function getConfig(): WebConfig {
             {
                 name: 'ApiServlet',
                 param: {
-                    schemas: 'Schemas'
+                    schemas: 'Schemas',
+                    queryOption: queryOption
                 }
             }
         ],

@@ -24,7 +24,9 @@ export interface IDataAdapter {
 
 export interface IQueryAdapter {
     init(params?: any);
-    query(sql: string, headers: string[]): any[];
+    query(sql: string): any[];
+    getColumns(): string[];
+    setFormat(format: 'csv' | 'json');
     getColumnId(column: string): string;
 }
 

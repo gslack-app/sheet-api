@@ -107,7 +107,7 @@ export function transform(list: any, options: { transform?: any, add?: any, remo
     });
 }
 
-export function evalExp(exp: string, variables: any): any {
+export function evalExp(exp: string, variables?: any): any {
     let args = variables ? Object.keys(variables) : [];
     let body = `return ${exp};`;
     let func = Function.apply(Function, variables ? args.concat(body) : null);
