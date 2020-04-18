@@ -11,12 +11,16 @@ export class SpreadsheetAdapter {
     protected excludedColumns: string[];
     protected pkType: 'auto' | 'uuid' | 'custom';
     protected pkColumn: string;
+    protected pkSeed: number;
+    protected pkStep: number;
 
     constructor({ ICache }: any) {
         this.cache = ICache;
         this.excludedColumns = [];
         this.pkType = 'auto';
         this.pkColumn = null;
+        this.pkSeed = 0;
+        this.pkStep = 1;
     }
 
     get startRow(): number {
@@ -42,6 +46,10 @@ export class SpreadsheetAdapter {
 
     get numColumns(): number {
         return this.headerRange.getNumColumns();
+    }
+
+    get useCache(): boolean {
+        return !(this.cache === null || this.cache === undefined);
     }
 
     //#region IDataAdapter
@@ -115,8 +123,14 @@ export class SpreadsheetAdapter {
         return this.header;
     }
 
-    setKeyType(type: 'auto' | 'uuid' | 'custom'): void {
+    setCache(cache: ICache): void {
+        this.cache = cache;
+    }
+
+    setKeyType(type: 'auto' | 'uuid' | 'custom', seed?: number, step?: number): void {
         this.pkType = type;
+        this.pkSeed = seed ? seed * 1 : 0;
+        this.pkStep = step ? step * 1 : 1;
     }
 
     setKeyColumn(pk: string): void {
@@ -156,7 +170,7 @@ export class SpreadsheetAdapter {
     protected generateKey(): any {
         switch (this.pkType) {
             case 'auto':
-                return this.lastRow + 1;
+                return this.pkSeed + this.numRows + this.pkStep;
             case 'uuid':
                 return Utilities.getUuid().replace(/\-/g, '');
             default:
@@ -165,22 +179,13 @@ export class SpreadsheetAdapter {
     }
 
     protected setKey(value: any, rec: any): any {
-        let key: any = null;
-        if (this.pkColumn)
-            key = this.pkColumn
-        else if (this.pkType == 'auto')
-            key = this.getSysId();
-        if (key)
-            rec[key] = value;
+        let key: string = this.pkColumn || this.getSysId();
+        rec[key] = value;
     }
 
     protected cleanCache() {
         if (this.useCache)
             this.cache.remove(this.getSessionId());
-    }
-
-    protected get useCache(): boolean {
-        return !(this.cache === null || this.cache === undefined);
     }
 
     protected selectDirect(offset?: number, limit?: number): any[] {

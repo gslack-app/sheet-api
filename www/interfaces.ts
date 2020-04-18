@@ -12,8 +12,9 @@ export interface IDataAdapter {
     deleteBatch(rids: any[]): void;
     getSysId(): string;
     getColumns(): string[];
+    setCache(cache: ICache): void
     setKeyColumn(pk: string): void;
-    setKeyType(type: 'auto' | 'uuid' | 'custom'): void;
+    setKeyType(type: 'auto' | 'uuid' | 'custom', seed?: number, step?: number): void;
 }
 
 export interface IQueryAdapter {
@@ -46,6 +47,8 @@ export interface Schema {
     default: any;
     validation: string;
     format: string;
+    seed?: number;
+    step?: number;
 }
 
 export interface Rule {

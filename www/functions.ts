@@ -10,22 +10,14 @@ export function extractSpreadsheetId(url: string): string {
     return null;
 }
 
-export function getStatusObject(status: HttpStatusCode): any {
+export function getErrorStatus(status: HttpStatusCode): any {
     let error: any = {
         type: 'error',
         status: 0,
         title: null,
         detail: null
     };
-    let success: any = {
-        type: 'success',
-        status: 0,
-        results: null
-    };
     switch (status) {
-        case HttpStatusCode.OK:
-            success.status = 200;
-            return success;
         case HttpStatusCode.BAD_REQUEST:
             error.status = 400;
             error.title = 'Bad Request';

@@ -1,6 +1,6 @@
 import { ApiServlet, ApiNotFoundHandler } from "./api";
 import { ApiGatekeeper } from "./api-gatekeeper";
-import { Resource } from "./interfaces";
+import { Resource, IDataAdapter } from "./interfaces";
 import { SpreadsheetAdapter } from "./spreadsheet-adapter";
 import { ResourceHandler } from "./resource-handler";
 import { Configuration, LogFilter, StackdriverLogger, CacheProvider } from "../core/common";
@@ -79,7 +79,8 @@ export function clearDataCache(): void {
     let id = ss.getId();
     let di = getDI();
     let cacheSvc: any = di.get('ICache');
-    let adapter = di.get('IDataAdapter');
+    let adapter: IDataAdapter = di.get('IDataAdapter');
+    adapter.setCache(null);
     adapter.init({ name: 'Resources' });
     let resources: Resource[] = adapter.select();
     let keys: string[] = resources.map(res => {

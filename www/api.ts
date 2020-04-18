@@ -1,5 +1,5 @@
 import { IDataAdapter, Schema, IQueryAdapter } from "./interfaces";
-import { getStatusObject, transform, evalExp, email, required, url, blank } from "./functions";
+import { getErrorStatus, transform, evalExp, email, required, url, blank } from "./functions";
 import { ILogger, ServletRequest, ServletResponse, NotFoundHandler, HttpStatusCode } from "../core/interfaces";
 import { HttpServlet } from "../core/servlet";
 import { json } from "../core/common";
@@ -92,7 +92,7 @@ export class ApiServlet extends HttpServlet {
         }
         catch (e) {
             this.logger && this.logger.error(`ApiServlet -> ${e.stack}`);
-            restStatus = getStatusObject(HttpStatusCode.INTERNAL_SERVER_ERROR);
+            restStatus = getErrorStatus(HttpStatusCode.INTERNAL_SERVER_ERROR);
             restStatus.detail = e.message;
             res.json(restStatus, HttpStatusCode.INTERNAL_SERVER_ERROR).end();
         }
@@ -112,10 +112,10 @@ export class ApiServlet extends HttpServlet {
             this.dataAdapter.init({ name: resource, id: spreadsheetId });
             if (pkCol) {
                 this.dataAdapter.setKeyColumn(pkCol.column);
-                this.dataAdapter.setKeyType(pkCol.primary as any);
+                this.dataAdapter.setKeyType(pkCol.primary as any, pkCol.seed, pkCol.step);
             }
             // Validate post data
-            restStatus = getStatusObject(HttpStatusCode.BAD_REQUEST);
+            restStatus = getErrorStatus(HttpStatusCode.BAD_REQUEST);
             let should = (batch && action !== 'delete') || ['create', 'update'].includes(action);
             if (should && !objects) {
                 res.json(restStatus, HttpStatusCode.BAD_REQUEST).end();
@@ -138,46 +138,48 @@ export class ApiServlet extends HttpServlet {
         }
         catch (e) {
             this.logger && this.logger.error(`ApiServlet -> ${e.stack}`);
-            restStatus = getStatusObject(HttpStatusCode.INTERNAL_SERVER_ERROR);
+            restStatus = getErrorStatus(HttpStatusCode.INTERNAL_SERVER_ERROR);
             restStatus.detail = e.message;
             res.json(restStatus, HttpStatusCode.INTERNAL_SERVER_ERROR).end();
         }
     }
 
     protected processPost(action: string, id: any, objects: any, schemas: Schema[]): any {
-        let status = getStatusObject(HttpStatusCode.OK);
+        let results: any;
         let columns = this.dataAdapter.getColumns();
         if (action == 'create') {
             let rec = this.dataAdapter.insert(objects);
-            status.results = this.transformToREST(schemas, columns, [rec]);
+            results = this.transformToREST(schemas, columns, [rec]);
         }
         else {
             let recs = this.dataAdapter.selectByKey(id);
             if (recs.length === 0)
-                return getStatusObject(HttpStatusCode.NOT_FOUND);
+                return getErrorStatus(HttpStatusCode.NOT_FOUND);
+
             let source = recs[0];
             switch (action) {
                 case 'update':
                     Object.assign(source, objects);
                     this.dataAdapter.update(source);
-                    status.results = this.transformToREST(schemas, columns, [source]);
+                    results = this.transformToREST(schemas, columns, [source]);
                     break;
                 case 'delete':
                     this.dataAdapter.delete(source[this.dataAdapter.getSysId()]);
-                    status.results = this.transformToREST(schemas, columns, [source]);
+                    results = this.transformToREST(schemas, columns, [source]);
                     break;
             }
 
         }
-        return status;
+        return results;
     }
 
     protected processPostBatch(action: string, objects: any, schemas: Schema[]): void {
-        let status = getStatusObject(HttpStatusCode.OK);
+        //let status = getErrorStatus(HttpStatusCode.OK);
+        let results: any;
         let columns = this.dataAdapter.getColumns();
         if (action == 'create') {
             let rec = this.dataAdapter.insertBatch(objects);
-            status.results = this.transformToREST(schemas, columns, rec);
+            results = this.transformToREST(schemas, columns, rec);
         }
         else {
             let notFoundRecs: any[] = [];
@@ -189,7 +191,7 @@ export class ApiServlet extends HttpServlet {
                     return recs[0];
             });
             if (notFoundRecs.length) {
-                status = getStatusObject(HttpStatusCode.NOT_FOUND);
+                let status = getErrorStatus(HttpStatusCode.NOT_FOUND);
                 status.detail = notFoundRecs;
                 return status;
             }
@@ -200,15 +202,15 @@ export class ApiServlet extends HttpServlet {
                         Object.assign(source[i], objects[i]);
                     }
                     this.dataAdapter.updateBatch(source);
-                    status.results = this.transformToREST(schemas, columns, source);
+                    results = this.transformToREST(schemas, columns, source);
                     break;
                 case 'delete':
                     this.dataAdapter.deleteBatch(source);
-                    status.results = this.transformToREST(schemas, columns, source);
+                    results = this.transformToREST(schemas, columns, source);
                     break;
             }
         }
-        return status;
+        return results;
     }
 
     protected validate(recs: Schema[], data: any): any {
@@ -352,10 +354,10 @@ export class ApiServlet extends HttpServlet {
 
 export class ApiNotFoundHandler implements NotFoundHandler {
     doGet(): GoogleAppsScript.Content.TextOutput | GoogleAppsScript.HTML.HtmlOutput {
-        return json(getStatusObject(HttpStatusCode.NOT_FOUND));
+        return json(getErrorStatus(HttpStatusCode.NOT_FOUND));
     }
 
     doPost(): GoogleAppsScript.Content.TextOutput | GoogleAppsScript.HTML.HtmlOutput {
-        return json(getStatusObject(HttpStatusCode.NOT_FOUND));
+        return json(getErrorStatus(HttpStatusCode.NOT_FOUND));
     }
 }

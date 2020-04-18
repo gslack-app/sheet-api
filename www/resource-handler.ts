@@ -1,4 +1,4 @@
-import { extractSpreadsheetId, getStatusObject } from "./functions";
+import { extractSpreadsheetId, getErrorStatus } from "./functions";
 import { IDataAdapter, Resource } from "./interfaces";
 import { HttpFilter } from "../core/common";
 import { ILogger, ServletRequest, ICache, ServletResponse, HttpStatusCode } from "../core/interfaces";
@@ -41,7 +41,7 @@ export class ResourceHandler extends HttpFilter {
             routeParam.spreadsheetId = extractSpreadsheetId(rec.url);
         }
         else {
-            res.json(getStatusObject(HttpStatusCode.NOT_FOUND)).end();
+            res.json(getErrorStatus(HttpStatusCode.NOT_FOUND)).end();
         }
     }
 }

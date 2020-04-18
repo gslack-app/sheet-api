@@ -1,5 +1,5 @@
 import { IDataAdapter, Identity, Rule, IACLService } from "./interfaces";
-import { getStatusObject } from "./functions";
+import { getErrorStatus } from "./functions";
 import { HttpFilter } from "../core/common";
 import { ILogger, ServletRequest, ServletResponse, HttpStatusCode } from "../core/interfaces";
 import { ACLService } from '@techteamer/acl';
@@ -51,7 +51,7 @@ export class ApiGatekeeper extends HttpFilter {
         // Authentication check
         if (!identity) {
             this.logger.info(`Token ${token} is invalid`);
-            res.json(getStatusObject(HttpStatusCode.UNAUTHORIZED)).end();
+            res.json(getErrorStatus(HttpStatusCode.UNAUTHORIZED)).end();
             return;
         }
 
@@ -65,7 +65,7 @@ export class ApiGatekeeper extends HttpFilter {
         }
 
         if (!authorized)
-            res.json(getStatusObject(HttpStatusCode.FORBIDDEN)).end();
+            res.json(getErrorStatus(HttpStatusCode.FORBIDDEN)).end();
     }
 
     private getIdenity(token: string): Identity {
