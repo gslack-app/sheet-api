@@ -11,7 +11,7 @@ import { DependencyInjection } from "../core/vendors";
 import { extractSpreadsheetId } from "./functions";
 import { QueryAdapter } from "./query-adapter";
 
-let appName: string = 'Sheet API';
+let appName: string = PropertiesService.getScriptProperties().getProperty('app.name') || 'Sheet API';
 
 export function doGet(request: any): any {
     let container = new HttpServletContainer();
@@ -30,10 +30,32 @@ export function onOpen(e: any): void {
         var spreadsheet = SpreadsheetApp.getActive();
         var menuItems = [
             { name: 'Authorize', functionName: 'authorizeScript' },
+            { name: 'Initialize Settings', functionName: 'initSettings' },
             { name: 'Clear System Cache', functionName: 'clearSystemCache' },
             { name: 'Clear Data Cache', functionName: 'clearDataCache' }
         ];
         spreadsheet.addMenu(appName, menuItems);
+    }
+    catch (err) {
+        Browser.msgBox(err);
+    }
+}
+
+export function initSettings(): void {
+    try {
+        let propSvc = PropertiesService.getScriptProperties();
+        let settings: any = {
+            'app.name': 'Sheet API',
+            'app.logLevel': '1',
+            'app.secured': '1',
+            'app.query.no_format': '1'
+        };
+        Object.keys(settings).forEach(prop => {
+            let value = propSvc.getProperty(prop);
+            if (!value)
+                propSvc.setProperty(prop, settings[prop]);
+        });
+        Browser.msgBox(appName, 'Please configure the initialized settings', Browser.Buttons.OK);
     }
     catch (err) {
         Browser.msgBox(err);
@@ -83,8 +105,8 @@ export function clearSystemCache(): void {
 
 function getConfig(): WebConfig {
     let logLevel: any = PropertiesService.getScriptProperties().getProperty('app.logLevel') || LogLevel.INFO;
-    let secured: any = PropertiesService.getScriptProperties().getProperty('app.secured') || false;
-    let queryOption: string = PropertiesService.getScriptProperties().getProperty('app.queryOption') || 'no_format';
+    let secured: any = PropertiesService.getScriptProperties().getProperty('app.secured');
+    let noFormat: any = PropertiesService.getScriptProperties().getProperty('app.query.no_format');
     return {
         name: appName,
         description: 'Sheet API',
@@ -93,7 +115,7 @@ function getConfig(): WebConfig {
                 name: 'ApiServlet',
                 param: {
                     schemas: 'Schemas',
-                    queryOption: queryOption
+                    noFormat: noFormat ? parseInt(noFormat) : 1
                 }
             }
         ],
@@ -129,7 +151,7 @@ function getConfig(): WebConfig {
                 param: {
                     authentication: 'Authentication',
                     authorization: 'Authorization',
-                    secured: secured
+                    secured: secured ? parseInt(secured) : 1
                 }
             },
             {

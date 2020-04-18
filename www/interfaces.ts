@@ -26,8 +26,10 @@ export interface IQueryAdapter {
     init(params?: any);
     query(sql: string): any[];
     getColumns(): string[];
+    getIds(): string[];
     setFormat(format: 'csv' | 'json');
-    getColumnId(column: string): string;
+    getIdByColumn(column: string): string;
+    getColumnById(id: string): string;
 }
 
 export interface Identity {

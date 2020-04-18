@@ -7,7 +7,8 @@ export class QueryAdapter implements IQueryAdapter {
     protected sheetName: string;
     protected logger: ILogger;
     protected headerRange: GoogleAppsScript.Spreadsheet.Range;
-    protected dataColumn: Record<string, string>;
+    protected columnIdMap: Record<string, string>;
+    protected idColumnMap: Record<string, string>;
     protected format: 'csv' | 'json';
 
     constructor({ ILogger }: any) {
@@ -47,12 +48,15 @@ export class QueryAdapter implements IQueryAdapter {
         this.sheet = ss.getSheetByName(name);
         this.sheetName = name;
         this.headerRange = headerA1 ? this.sheet.getRange(headerA1) : this.sheet.getRange(1, 1, 1, this.lastColumn);
-        this.dataColumn = {};
+        this.columnIdMap = {};
+        this.idColumnMap = {};
         let headerRow = this.headerRange.getValues()[0];
         let start = this.startColumn;
         for (let i = 0, len = headerRow.length; i < len; i++) {
             let name = this.normalize(headerRow[i]);
-            this.dataColumn[name] = this.columnToLetter(start + i);
+            let col = this.columnToLetter(start + i);
+            this.columnIdMap[name] = col;
+            this.idColumnMap[col] = name;
         }
     }
 
@@ -63,11 +67,19 @@ export class QueryAdapter implements IQueryAdapter {
     }
 
     getColumns(): string[] {
-        return Object.keys(this.dataColumn);
+        return Object.keys(this.columnIdMap);
     }
 
-    getColumnId(column: string): string {
-        return this.dataColumn[column];
+    getIds(): string[] {
+        return Object.keys(this.idColumnMap);
+    }
+
+    getIdByColumn(column: string): string {
+        return this.columnIdMap[column];
+    }
+
+    getColumnById(id: string): string {
+        return this.idColumnMap[id];
     }
 
     setFormat(format: 'csv' | 'json') {
@@ -91,7 +103,6 @@ export class QueryAdapter implements IQueryAdapter {
         let { groups: { json } } = regex.exec(data);
         if (!json)
             return [];
-        this.logger.info(json);
         let obj = JSON.parse(json);
         if (obj.status != 'ok')
             return [];
@@ -107,6 +118,11 @@ export class QueryAdapter implements IQueryAdapter {
                 let type: string = cols[j].type;
                 let name: string = cols[j].label;
                 let pattern: string = cols[j].pattern;
+                if (!col) {
+                    item[name] = null;
+                    continue;
+                }
+
                 switch (type) {
                     case 'date':
                         let value = eval(`new ${col.v}`);

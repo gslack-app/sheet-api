@@ -14,6 +14,10 @@ function authorizeScript() {
     return app.authorizeScript();
 }
 
+function initSettings() {
+    return app.initSettings();
+}
+
 function clearDataCache() {
     return app.clearDataCache();
 }

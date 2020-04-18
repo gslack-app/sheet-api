@@ -23,8 +23,8 @@ export class ApiServlet extends HttpServlet {
 
     init(param?: Record<string, any>, context?: Record<string, any>): void {
         super.init(param, context);
-        let { schemas, queryOption } = this.param;
-        this.queryOption = queryOption || 'no_format';
+        let { schemas, noFormat } = this.param;
+        this.queryOption = noFormat ? 'no_format' : 'no_values';
         this.dataAdapter.init({ name: schemas });
         this.schemas = this.schemas = this.dataAdapter.select();
     }
@@ -42,16 +42,27 @@ export class ApiServlet extends HttpServlet {
 
         try {
             this.queryAdapter.init({ name: resource, id: spreadsheetId });
-            this.queryAdapter.setFormat(this.queryOption == 'no_format' ? 'json' : 'csv')
-            let columns = schemas.length ? schemas.map(s => this.queryAdapter.getColumnId(s.column)) : this.queryAdapter.getColumns();
-            let selectPart = `select ${columns.join()}`;
+            this.queryAdapter.setFormat(this.queryOption == 'no_format' ? 'json' : 'csv');
+            let columns: string[];
+            let labels: string[];
+            let formats: string[];
+
+            if (schemas.length) {
+                columns = schemas.map(s => this.queryAdapter.getIdByColumn(s.column));
+                labels = schemas.map(s => `${this.queryAdapter.getIdByColumn(s.column)} '${s.alias}'`);
+                formats = schemas.map(s => s.format ? `${this.queryAdapter.getIdByColumn(s.column)} '${s.format}'` : null).filter(f => f);
+            }
+            else {
+                columns = this.queryAdapter.getIds();
+                labels = columns.map(c => `${c} '${this.queryAdapter.getColumnById(c)}'`);
+                formats = [];
+            }
             // where
             // order by
+            let selectPart = `select ${columns.join()}`;
             let limitPart = `limit ${limit}`;
             let offsetPart = `offset ${offset}`;
-            let labels = schemas.length ? schemas.map(s => `${this.queryAdapter.getColumnId(s.column)} '${s.alias}'`) : [];
-            let labelPart = labels.length ? `label ${labels.join()}` : '';
-            let formats = schemas.map(s => s.format ? `${this.queryAdapter.getColumnId(s.column)} '${s.format}'` : null).filter(f => f);
+            let labelPart = `label ${labels.join()}`;
             let formatPart = formats.length ? `format ${formats.filter(f => f).join()}` : '';
             let optionsPart = `options ${this.queryOption}`;
             let query = [selectPart, limitPart, offsetPart, labelPart, formatPart, optionsPart].join(' ');
