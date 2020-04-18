@@ -1,19 +1,5 @@
 import { HttpStatusCode } from "../core/interfaces";
-import jsonQuery from 'json-query';
 import { error, not, empty } from "f-validator";
-
-function getLocalHelpers(): any {
-    return {
-        eq: (str1: string, str2: string) => str1.toLowerCase() === str2.toLowerCase(),
-        neq: (str1: string, str2: string) => str1.toLowerCase() !== str2.toLowerCase(),
-        left: (str: string, len: number) => str.substr(0, len),
-        right: (str: string, len: number) => str.substr(str.length - len, str.length),
-        like: (str: string, sub: string) => str.includes(sub),
-        notLike: (str: string, sub: string) => !str.includes(sub),
-        empty: (str: string) => str ? str.trim().length == 0 : true,
-        notEmpty: (str: string) => str ? str.trim().length > 0 : false
-    }
-}
 
 export function extractSpreadsheetId(url: string): string {
     if (url) {
@@ -22,16 +8,6 @@ export function extractSpreadsheetId(url: string): string {
         return spreadsheetId;
     }
     return null;
-}
-
-export function doQuery(query: string, data: any): any {
-    return jsonQuery(query,
-        {
-            data: data,
-            force: [],
-            locals: getLocalHelpers(),
-            allowRegexp: true
-        }).value;
 }
 
 export function getStatusObject(status: HttpStatusCode): any {

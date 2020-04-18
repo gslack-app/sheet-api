@@ -1,5 +1,5 @@
 import { IDataAdapter, Schema, IQueryAdapter } from "./interfaces";
-import { doQuery, getStatusObject, transform, evalExp, email, required, url, blank } from "./functions";
+import { getStatusObject, transform, evalExp, email, required, url, blank } from "./functions";
 import { ILogger, ServletRequest, ServletResponse, NotFoundHandler, HttpStatusCode } from "../core/interfaces";
 import { HttpServlet } from "../core/servlet";
 import { json } from "../core/common";
@@ -233,7 +233,7 @@ export class ApiServlet extends HttpServlet {
     }
 
     protected getSchemas(resource: string): Schema[] {
-        return doQuery(`[*resource=${resource}]`, this.schemas);
+        return this.schemas.filter(s => s.resource.toLowerCase() === resource.toLowerCase());
     }
 
     protected getExcludedColumns(recs: Schema[], columns: string[]): string[] {

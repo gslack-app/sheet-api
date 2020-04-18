@@ -1,5 +1,5 @@
 import { IDataAdapter, Identity, Rule, IACLService } from "./interfaces";
-import { getStatusObject, doQuery } from "./functions";
+import { getStatusObject } from "./functions";
 import { HttpFilter } from "../core/common";
 import { ILogger, ServletRequest, ServletResponse, HttpStatusCode } from "../core/interfaces";
 import { ACLService } from '@techteamer/acl';
@@ -7,7 +7,7 @@ import { ACLService } from '@techteamer/acl';
 export class ApiGatekeeper extends HttpFilter {
     private logger: ILogger;
     private adapter: IDataAdapter;
-    private identities: Identity[];
+    private identities: any[];
     private rules: Rule[];
     private aclSvc: IACLService;
     private secured: boolean;
@@ -70,7 +70,7 @@ export class ApiGatekeeper extends HttpFilter {
 
     private getIdenity(token: string): Identity {
         if (token) {
-            let rec = doQuery(`[*token=${token}]`, this.identities)[0];
+            let rec = this.identities.filter(id => id.token == token)[0];
             return rec ? {
                 token: rec.token,
                 roles: rec.roles.split(',').map(r => r.trim().toLocaleLowerCase())

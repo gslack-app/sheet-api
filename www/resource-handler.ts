@@ -1,4 +1,4 @@
-import { doQuery, extractSpreadsheetId, getStatusObject } from "./functions";
+import { extractSpreadsheetId, getStatusObject } from "./functions";
 import { IDataAdapter, Resource } from "./interfaces";
 import { HttpFilter } from "../core/common";
 import { ILogger, ServletRequest, ICache, ServletResponse, HttpStatusCode } from "../core/interfaces";
@@ -33,7 +33,7 @@ export class ResourceHandler extends HttpFilter {
         // Mapping resource to persistent layer
         let routeParam = req.var['_get_'] || req.var['_post_'];
         let { resource } = routeParam;
-        let rec: Resource = doQuery(`[*name:eq(${resource})]`, this.resources)[0];
+        let rec: Resource = this.resources.filter(r => r.name.toLowerCase() === resource.toLowerCase())[0];
         if (rec) {
             // Store the old value in _prop_ format
             routeParam['_resource_'] = resource;

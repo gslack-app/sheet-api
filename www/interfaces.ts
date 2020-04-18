@@ -44,7 +44,7 @@ export interface Resource {
 }
 
 export interface Schema {
-    name: string;
+    resource: string;
     column: string;
     alias: string;
     type: 'string' | 'number' | 'boolean' | 'date' | 'email' | 'url';
