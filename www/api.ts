@@ -205,7 +205,7 @@ export class ApiServlet extends HttpServlet {
                     results = this.transformToREST(schemas, columns, source);
                     break;
                 case 'delete':
-                    this.dataAdapter.deleteBatch(source);
+                    this.dataAdapter.deleteBatch(source.map(s => s[this.dataAdapter.getSysId()]));
                     results = this.transformToREST(schemas, columns, source);
                     break;
             }
@@ -277,7 +277,7 @@ export class ApiServlet extends HttpServlet {
             let addProps: any = {};
             let transformProps: any = {};
             let renameProps: any = {};
-            let removeProps = this.getExcludedColumns(recs, columns);
+            let removeProps = this.getExcludedColumns(recs, columns).concat(this.dataAdapter.getSysId());
 
             for (let i = 0, len = recs.length; i < len; i++) {
                 let schema = recs[i];

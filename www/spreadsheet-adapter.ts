@@ -54,13 +54,13 @@ export class SpreadsheetAdapter {
 
     //#region IDataAdapter
     init(params?: any) {
-        let { name, id, headerA1Notation } = params;
+        let { name, id, headerA1 } = params;
         this.sheetName = name;
         let ss = id ? SpreadsheetApp.openById(id) : SpreadsheetApp.getActiveSpreadsheet();
         this.sheet = ss.getSheetByName(name);
         this.spreadsheetId = ss.getId();
-        this.headerRange = headerA1Notation
-            ? this.sheet.getRange(headerA1Notation)
+        this.headerRange = headerA1
+            ? this.sheet.getRange(headerA1)
             : this.sheet.getRange(1, 1, 1, this.lastColumn);
         this.header = this.headerRange.getValues()[0].map(h => this.normalize(h));
     }
@@ -77,8 +77,21 @@ export class SpreadsheetAdapter {
     }
 
     selectByKey(id: any): any[] {
-        let pk = typeof id === 'object' ? id[this.pkColumn || this.getSysId()] : id;
-        return this.selectWhere(r => r[this.pkColumn || this.getSysId()] == pk);
+        var value = typeof id === 'string' ? id : id.toString();
+        var searchRange = this.sheet.getRange(this.startRow, this.startColumn + this.header.indexOf(this.pkColumn), this.numRows, 1);
+        let matches = searchRange.createTextFinder(value)
+            .matchEntireCell(true)
+            .matchCase(false)
+            .ignoreDiacritics(false)
+            .findAll();
+        return matches.map(match => {
+            let start = match.getRow();
+            let range = this.sheet.getRange(start, this.startColumn, 1, this.numColumns);
+            let data = range.getValues()[0];
+            let row = this.arrayToObject(data[0]);
+            row[this.getSysId()] = start;
+            return row;
+        });
     }
 
     insert(record: any): any {
@@ -108,10 +121,10 @@ export class SpreadsheetAdapter {
         this.cleanCache();
     }
 
-    deleteBatch(rowIds: any[]): void {
-        let rids = rowIds.map(r => typeof r === 'object' ? r[this.getSysId()] : r);
-        let i = 0;
-        rids.forEach(rid => this._delete_(rid - (i++)));
+    deleteBatch(rowIds: number[]): void {
+        // Delete the row with largest id first
+        let rids = rowIds.map(r => r * 1).sort((a, b) => b - a);
+        rids.forEach(rid => this._delete_(rid));
         this.cleanCache();
     }
 
@@ -164,7 +177,7 @@ export class SpreadsheetAdapter {
 
     protected _delete_(rowId: number): void {
         if (rowId)
-            this.sheet.deleteRow(this.headerRange.getNumRows() + rowId);
+            this.sheet.deleteRow(rowId);
     }
 
     protected generateKey(): any {
