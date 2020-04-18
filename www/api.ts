@@ -87,8 +87,10 @@ export class ApiServlet extends HttpServlet {
             let optionsPart = `options ${this.queryOption}`;
             let query = [selectPart, wherePart, limitPart, offsetPart, labelPart, formatPart, optionsPart].join(' ');
             this.logger.debug(query);
-            let results = this.queryAdapter.query(query);
-            res.json(results, HttpStatusCode.OK).end();
+            let results = req.param.output == 'csv' ? this.queryAdapter.exportToCsv(query) : this.queryAdapter.query(query);
+            req.param.output == 'csv'
+                ? res.mime(ContentService.MimeType.CSV).send(results, HttpStatusCode.OK)
+                : res.json(results, HttpStatusCode.OK).end();
         }
         catch (e) {
             this.logger && this.logger.error(`ApiServlet -> ${e.stack}`);

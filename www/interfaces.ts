@@ -20,6 +20,7 @@ export interface IDataAdapter {
 export interface IQueryAdapter {
     init(params?: any);
     query(sql: string): any[];
+    exportToCsv(sql: string): string;
     getColumns(): string[];
     getIds(): string[];
     setFormat(format: 'csv' | 'json');

@@ -66,6 +66,12 @@ export class QueryAdapter implements IQueryAdapter {
         return this.format == 'csv' ? this.processCsv(data) : this.processJSON(data);
     }
 
+    exportToCsv(sql: string): string {
+        this.format = 'csv';
+        let dataRange = this.sheet.getRange(this.startRow, this.startColumn, this.numRows, this.numColumns);
+        return this.getSheetQueryResult(this.spreadsheetId, this.sheetName, dataRange.getA1Notation(), sql);
+    }
+
     getColumns(): string[] {
         return Object.keys(this.columnIdMap);
     }
