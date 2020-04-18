@@ -77,7 +77,7 @@ export class SpreadsheetAdapter {
     }
 
     selectByKey(id: any): any[] {
-        var value = typeof id === 'string' ? id : id.toString();
+        var value = typeof id === 'object' ? id[this.pkColumn] : id.toString();
         var searchRange = this.sheet.getRange(this.startRow, this.startColumn + this.header.indexOf(this.pkColumn), this.numRows, 1);
         let matches = searchRange.createTextFinder(value)
             .matchEntireCell(true)
@@ -87,8 +87,7 @@ export class SpreadsheetAdapter {
         return matches.map(match => {
             let start = match.getRow();
             let range = this.sheet.getRange(start, this.startColumn, 1, this.numColumns);
-            let data = range.getValues()[0];
-            let row = this.arrayToObject(data[0]);
+            let row = this.arrayToObject(range.getValues()[0]);
             row[this.getSysId()] = start;
             return row;
         });
@@ -171,7 +170,7 @@ export class SpreadsheetAdapter {
         let rowId = record[this.getSysId()];
         if (rowId) {
             let item = this.objectToArray(record);
-            this.sheet.getRange(this.headerRange.getNumRows() + rowId, this.startColumn, 1, item.length).setValues([item]);
+            this.sheet.getRange(rowId, this.startColumn, 1, item.length).setValues([item]);
         }
     }
 
