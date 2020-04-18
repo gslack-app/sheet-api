@@ -56,7 +56,7 @@ export class ApiGatekeeper extends HttpFilter {
         }
 
         // Authorization check
-        let apiRegex = /^\/api\/v1\/(?<action>(create|update|delete))?\/?(?<resource>[\w\-_]+)\/?(?<id>[\w\-_]+)?\/?$/i;
+        let apiRegex = /^\/api\/v1\/(?<action>(create|update|delete))?\/?(?<resource>[\w\-_]+)\/?(?<id>[\w\-_@\.]+)?\/?$/i;
         let authorized = apiRegex.test(req.url);
         if (authorized) {
             let { groups: { action, resource } } = apiRegex.exec(req.url);

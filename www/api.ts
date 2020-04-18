@@ -51,7 +51,7 @@ export class ApiServlet extends HttpServlet {
             let pk = schemas.filter(s => s.primary)[0];
 
             if (id && !pk)
-                throw new Error('Primary key column not found');
+                throw new Error(`Resource ${_resource_} does not have primary key column`);
 
             if (schemas.length) {
                 columns = schemas.map(s => this.queryAdapter.getIdByColumn(s.column));
@@ -71,10 +71,10 @@ export class ApiServlet extends HttpServlet {
                 // Convert alias to column id
                 if (where) {
                     // Replace the longest alias first
-                    schemas.sort((s1, s2) => s2.alias.length - s1.alias.length);                    
+                    schemas.sort((s1, s2) => s2.alias.length - s1.alias.length);
                     schemas.forEach(s => where = where.replace(new RegExp(s.alias, 'g'), this.queryAdapter.getIdByColumn(s.column)));
                 }
-                    
+
                 condition = where;
             }
             // order by

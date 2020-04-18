@@ -122,7 +122,7 @@ function getConfig(): WebConfig {
                 method: 'GET',
                 handler: 'ApiServlet',
                 patterns: [
-                    /^\/api\/v1\/(?<resource>[\w\-_]+)\/?(?<id>[\w\-_]+)?\/?$/i
+                    /^\/api\/v1\/(?<resource>[\w\-_]+)\/?(?<id>[\w\-_@\.]+)?\/?$/i
                 ]
             },
             {
@@ -130,7 +130,7 @@ function getConfig(): WebConfig {
                 handler: 'ApiServlet',
                 patterns: [
                     /^\/api\/v1\/(?<action>(create))\/(?<resource>[\w\-_]+)\/?$/i,
-                    /^\/api\/v1\/(?<action>(update|delete))\/(?<resource>[\w\-_]+)\/?(?<id>[\w\-_]+)?\/?$/i
+                    /^\/api\/v1\/(?<action>(update|delete))\/(?<resource>[\w\-_]+)\/?(?<id>[\w\-_@\.]+)?\/?$/i
                 ]
             }
         ],
