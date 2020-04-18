@@ -68,10 +68,6 @@ export class SpreadsheetAdapter {
         return this.selectDirect(offset, limit);
     }
 
-    selectWhere(where: (rec: any) => boolean, start?: number, size?: number): any[] {
-        return this.select(start, size).filter(where);
-    }
-
     selectByKey(id: any): any[] {
         let pk = typeof id === 'object' ? id[this.pkColumn || this.getSysId()] : id;
         return this.selectWhere(r => r[this.pkColumn || this.getSysId()] == pk);
@@ -111,37 +107,12 @@ export class SpreadsheetAdapter {
         this.cleanCache();
     }
 
-    getEmptyRow(def: any): any {
-        let dataRow: Record<string, any> = {};
-        for (let j = 0, len = this.header.length; j < len; j++) {
-            let colName = this.header[j];
-            dataRow[colName] = def || null;
-        }
-        return dataRow;
-    }
-
-    getTotal(): number {
-        return this.numRows;
-    }
-
-    getSessionId(): string {
-        return `${this.spreadsheetId}.${this.sheetName}`;
-    }
-
     getSysId(): string {
         return SpreadsheetAdapter.sysId;
     }
 
     getColumns(): string[] {
         return this.header;
-    }
-
-    setCache(cache: ICache) {
-        this.cache = cache;
-    }
-
-    setExcludedColumns(columns: string[]): void {
-        this.excludedColumns = columns;
     }
 
     setKeyType(type: 'auto' | 'uuid' | 'custom'): void {
@@ -152,6 +123,14 @@ export class SpreadsheetAdapter {
         this.pkColumn = pk;
     }
     //#endregion
+
+    protected getSessionId(): string {
+        return `${this.spreadsheetId}.${this.sheetName}`;
+    }
+
+    protected selectWhere(where: (rec: any) => boolean, start?: number, size?: number): any[] {
+        return this.select(start, size).filter(where);
+    }
 
     protected _insert_(record: any): any {
         let start = this.lastRow + 1;

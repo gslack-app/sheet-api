@@ -33,6 +33,7 @@ export class ApiServlet extends HttpServlet {
         let { resource, id, spreadsheetId, _resource_ } = req.var['_get_'];
         let offset: number = id ? 1 : req.param.offset || 1;
         let limit: number = id ? 1 : req.param.limit || this.DefaultPageSize;
+        let where: string = req.param.where;
         // Convert to number
         offset *= 0;
         limit *= 1;
@@ -44,8 +45,13 @@ export class ApiServlet extends HttpServlet {
             this.queryAdapter.init({ name: resource, id: spreadsheetId });
             this.queryAdapter.setFormat(this.queryOption == 'no_format' ? 'json' : 'csv');
             let columns: string[];
+            let condition: string;
             let labels: string[];
             let formats: string[];
+            let pk = schemas.filter(s => s.primary)[0];
+
+            if (id && !pk)
+                throw new Error('Primary key column not found');
 
             if (schemas.length) {
                 columns = schemas.map(s => this.queryAdapter.getIdByColumn(s.column));
@@ -57,15 +63,29 @@ export class ApiServlet extends HttpServlet {
                 labels = columns.map(c => `${c} '${this.queryAdapter.getColumnById(c)}'`);
                 formats = [];
             }
-            // where
+
+            if (id) {
+                condition = `${this.queryAdapter.getIdByColumn(pk.column)} = ${pk.type == 'number' ? id : "'" + id + "'"}`;
+            }
+            else {
+                // Convert alias to column id
+                if (where) {
+                    // Replace the longest alias first
+                    schemas.sort((s1, s2) => s2.alias.length - s1.alias.length);                    
+                    schemas.forEach(s => where = where.replace(new RegExp(s.alias, 'g'), this.queryAdapter.getIdByColumn(s.column)));
+                }
+                    
+                condition = where;
+            }
             // order by
             let selectPart = `select ${columns.join()}`;
+            let wherePart = condition ? `where ${condition}` : '';
             let limitPart = `limit ${limit}`;
             let offsetPart = `offset ${offset}`;
             let labelPart = `label ${labels.join()}`;
             let formatPart = formats.length ? `format ${formats.filter(f => f).join()}` : '';
             let optionsPart = `options ${this.queryOption}`;
-            let query = [selectPart, limitPart, offsetPart, labelPart, formatPart, optionsPart].join(' ');
+            let query = [selectPart, wherePart, limitPart, offsetPart, labelPart, formatPart, optionsPart].join(' ');
             this.logger.debug(query);
             let results = this.queryAdapter.query(query);
             res.json(results, HttpStatusCode.OK).end();

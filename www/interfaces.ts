@@ -2,22 +2,16 @@ import { ICache } from "../core/interfaces";
 
 export interface IDataAdapter {
     init(params?: any);
-    selectByKey(id: any): any[];
     select(offset?: number, limit?: number): any[];
-    selectWhere(where: (rec: any) => boolean, offset?: number, limit?: number): any[];
+    selectByKey(id: any): any[];
     insert(record: any): any;
     insertBatch(records: any[]): any[];
     update(record: any): void;
     updateBatch(records: any[]): void;
     delete(rowId: number): void;
     deleteBatch(rids: any[]): void;
-    getEmptyRow(def: any): any;
-    getTotal(): number;
-    getSessionId(): string;
     getSysId(): string;
     getColumns(): string[];
-    setCache(cache: ICache): void;
-    setExcludedColumns(columns: string[]): void;
     setKeyColumn(pk: string): void;
     setKeyType(type: 'auto' | 'uuid' | 'custom'): void;
 }

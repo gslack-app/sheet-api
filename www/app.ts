@@ -1,10 +1,9 @@
 import { ApiServlet, ApiNotFoundHandler } from "./api";
 import { ApiGatekeeper } from "./api-gatekeeper";
-import { EnhancedCache } from "./enhanced-cache";
 import { Resource } from "./interfaces";
 import { SpreadsheetAdapter } from "./spreadsheet-adapter";
 import { ResourceHandler } from "./resource-handler";
-import { Configuration, LogFilter, StackdriverLogger } from "../core/common";
+import { Configuration, LogFilter, StackdriverLogger, CacheProvider } from "../core/common";
 import { LogLevel, WebConfig, ICache } from "../core/interfaces";
 import { HttpServletResponse, HttpServletContainer, HttpServletRequest } from "../core/servlet";
 import { DependencyInjection } from "../core/vendors";
@@ -81,7 +80,6 @@ export function clearDataCache(): void {
     let di = getDI();
     let cacheSvc: any = di.get('ICache');
     let adapter = di.get('IDataAdapter');
-    adapter.setCache(null);
     adapter.init({ name: 'Resources' });
     let resources: Resource[] = adapter.select();
     let keys: string[] = resources.map(res => {
@@ -172,7 +170,7 @@ function getDI(): DependencyInjection {
         { name: 'NotFoundHandler', useClass: ApiNotFoundHandler },
         { name: 'IConfiguration', useClass: Configuration },
         { name: 'ILogger', useClass: StackdriverLogger, singleton: true },
-        { name: 'ICache', useClass: EnhancedCache, deps: ['ILogger'] },
+        { name: 'ICache', useClass: CacheProvider, deps: ['ILogger'] },
         { name: 'IDataAdapter', useClass: SpreadsheetAdapter, deps: ['ICache'] },
         { name: 'IQueryAdapter', useClass: QueryAdapter, deps: ['ILogger'] },
         { name: 'LogFilter', useClass: LogFilter, deps: ['ILogger'] },
