@@ -6,13 +6,13 @@ import { json } from "../core/common";
 import { error, object, array, string, number, boolean, date, regexp, Null, Undefined, empty, regex, not, any, and, or, optional, is, oneOf, like, objectOf, arrayOf } from 'f-validator';
 
 export class ApiServlet extends HttpServlet {
-    protected readonly MaxPageSize: number = 100;
     protected readonly DefaultPageSize: number = 20;
     protected queryAdapter: IQueryAdapter;
     protected logger: ILogger;
     protected dataAdapter: IDataAdapter;
     protected schemas: Schema[];
     protected queryOption: 'no_format' | 'no_values';
+    protected limit: number;
 
     constructor({ ILogger, IQueryAdapter, IDataAdapter }: any) {
         super();
@@ -23,7 +23,8 @@ export class ApiServlet extends HttpServlet {
 
     init(param?: Record<string, any>, context?: Record<string, any>): void {
         super.init(param, context);
-        let { schemas, noFormat } = this.param;
+        let { schemas, noFormat, limit } = this.param;
+        this.limit = limit;
         this.queryOption = noFormat ? 'no_format' : 'no_values';
         this.dataAdapter.init({ name: schemas });
         this.schemas = this.schemas = this.dataAdapter.select();
@@ -32,12 +33,11 @@ export class ApiServlet extends HttpServlet {
     async doGet(req: ServletRequest, res: ServletResponse): Promise<void> {
         let { resource, id, spreadsheetId, _resource_ } = req.var['_get_'];
         let offset: number = id ? 1 : req.param.offset || 1;
-        let limit: number = id ? 1 : req.param.limit || this.DefaultPageSize;
+        let limit: number = id ? 1 : req.param.limit || this.limit;
         let where: string = req.param.where;
         // Convert to number
         offset *= 0;
         limit *= 1;
-        limit = limit > this.MaxPageSize ? this.MaxPageSize : limit;
         let schemas = this.getSchemas(_resource_);
         let restStatus: any;
 
@@ -80,7 +80,7 @@ export class ApiServlet extends HttpServlet {
             // order by
             let selectPart = `select ${columns.join()}`;
             let wherePart = condition ? `where ${condition}` : '';
-            let limitPart = `limit ${limit}`;
+            let limitPart = limit ? `limit ${limit}` : '';
             let offsetPart = `offset ${offset}`;
             let labelPart = `label ${labels.join()}`;
             let formatPart = formats.length ? `format ${formats.filter(f => f).join()}` : '';

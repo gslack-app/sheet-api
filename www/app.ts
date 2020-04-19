@@ -47,7 +47,8 @@ export function initSettings(): void {
             'app.name': 'Sheet API',
             'app.logLevel': '1',
             'app.secured': '1',
-            'app.query.no_format': '1'
+            'app.query.no_format': '1',
+            'app.query.limit': '20'
         };
         Object.keys(settings).forEach(prop => {
             let value = propSvc.getProperty(prop);
@@ -106,6 +107,7 @@ function getConfig(): WebConfig {
     let logLevel: any = PropertiesService.getScriptProperties().getProperty('app.logLevel') || LogLevel.INFO;
     let secured: any = PropertiesService.getScriptProperties().getProperty('app.secured');
     let noFormat: any = PropertiesService.getScriptProperties().getProperty('app.query.no_format');
+    let limit: any = PropertiesService.getScriptProperties().getProperty('app.query.limit');
     return {
         name: appName,
         description: 'Sheet API',
@@ -114,7 +116,8 @@ function getConfig(): WebConfig {
                 name: 'ApiServlet',
                 param: {
                     schemas: 'Schemas',
-                    noFormat: noFormat ? parseInt(noFormat) : 1
+                    noFormat: noFormat ? parseInt(noFormat) : 1,                    
+                    limit: limit ? parseInt(limit) : 20
                 }
             }
         ],
