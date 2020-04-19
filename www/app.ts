@@ -108,6 +108,7 @@ function getConfig(): WebConfig {
     let secured: any = PropertiesService.getScriptProperties().getProperty('app.secured');
     let noFormat: any = PropertiesService.getScriptProperties().getProperty('app.query.no_format');
     let limit: any = PropertiesService.getScriptProperties().getProperty('app.query.limit');
+    
     return {
         name: appName,
         description: 'Sheet API',

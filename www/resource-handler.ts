@@ -39,6 +39,7 @@ export class ResourceHandler extends HttpFilter {
             routeParam['_resource_'] = resource;
             routeParam.resource = rec.sheet;
             routeParam.spreadsheetId = extractSpreadsheetId(rec.url);
+            routeParam.resourceLimit = rec.limit;
         }
         else {
             res.json(getErrorStatus(HttpStatusCode.NOT_FOUND)).end();

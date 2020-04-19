@@ -37,6 +37,7 @@ export interface Resource {
     name: string;
     url: string;
     sheet: string;
+    limitGet: number;
 }
 
 export interface Schema {

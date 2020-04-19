@@ -12,7 +12,7 @@ export class ApiServlet extends HttpServlet {
     protected dataAdapter: IDataAdapter;
     protected schemas: Schema[];
     protected queryOption: 'no_format' | 'no_values';
-    protected limit: number;
+    protected globalLimit: number;
 
     constructor({ ILogger, IQueryAdapter, IDataAdapter }: any) {
         super();
@@ -24,22 +24,28 @@ export class ApiServlet extends HttpServlet {
     init(param?: Record<string, any>, context?: Record<string, any>): void {
         super.init(param, context);
         let { schemas, noFormat, limit } = this.param;
-        this.limit = limit;
+        this.globalLimit = limit;
         this.queryOption = noFormat ? 'no_format' : 'no_values';
         this.dataAdapter.init({ name: schemas });
         this.schemas = this.schemas = this.dataAdapter.select();
     }
 
     async doGet(req: ServletRequest, res: ServletResponse): Promise<void> {
-        let { resource, id, spreadsheetId, _resource_ } = req.var['_get_'];
+        let { resource, id, spreadsheetId, _resource_, resourceLimit } = req.var['_get_'];
         let offset: number = id ? 1 : req.param.offset || 1;
-        let limit: number = id ? 1 : req.param.limit || this.limit;
+        let queryLimit = req.param.limit;
+        let limit: number = id ? 1 : queryLimit || resourceLimit || this.globalLimit;
         let where: string = req.param.where;
+        // Check if unlimited query
+        if (!id && queryLimit == 0 && resourceLimit == 0)
+            limit = 0;
         // Convert to number
         offset *= 0;
         limit *= 1;
         let schemas = this.getSchemas(_resource_);
         let restStatus: any;
+
+
 
         try {
             this.queryAdapter.init({ name: resource, id: spreadsheetId });
