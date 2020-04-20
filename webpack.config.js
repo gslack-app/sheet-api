@@ -43,7 +43,7 @@ module.exports = (env) => {
                             braces: true,
                             comments: false
                         },
-                        keep_classnames: !isProduction,
+                        keep_classnames: true,
                         keep_fnames: true,
                     }
                 })

@@ -30,8 +30,7 @@ export function onOpen(e: any): void {
         var menuItems = [
             { name: 'Authorize', functionName: 'authorizeScript' },
             { name: 'Initialize Settings', functionName: 'initSettings' },
-            { name: 'Clear System Cache', functionName: 'clearSystemCache' },
-            { name: 'Clear Data Cache', functionName: 'clearDataCache' }
+            { name: 'Clear System Cache', functionName: 'clearSystemCache' }
         ];
         spreadsheet.addMenu(appName, menuItems);
     }
@@ -75,23 +74,6 @@ export function authorizeScript(): void {
     }
 }
 
-export function clearDataCache(): void {
-    let ss = SpreadsheetApp.getActiveSpreadsheet();
-    let id = ss.getId();
-    let di = getDI();
-    let cacheSvc: any = di.get('ICache');
-    let adapter: IDataAdapter = di.get('IDataAdapter');
-    adapter.setCache(null);
-    adapter.init({ name: 'Resources' });
-    let resources: Resource[] = adapter.select();
-    let keys: string[] = resources.map(res => {
-        let spreadsheetId = extractSpreadsheetId(res.url) || id;
-        return `${spreadsheetId}.${res.sheet.trim()}`;
-    });
-    cacheSvc.removeAll(keys);
-    Browser.msgBox(appName, `The cache \\n${keys.join('\\n  ')}\\nare cleaned up`, Browser.Buttons.OK);
-}
-
 export function clearSystemCache(): void {
     // Clear system cache
     let ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -108,7 +90,7 @@ function getConfig(): WebConfig {
     let secured: any = PropertiesService.getScriptProperties().getProperty('app.secured');
     let noFormat: any = PropertiesService.getScriptProperties().getProperty('app.query.no_format');
     let limit: any = PropertiesService.getScriptProperties().getProperty('app.query.limit');
-    
+
     return {
         name: appName,
         description: 'Sheet API',
@@ -117,7 +99,7 @@ function getConfig(): WebConfig {
                 name: 'ApiServlet',
                 param: {
                     schemas: 'Schemas',
-                    noFormat: noFormat ? parseInt(noFormat) : 1,                    
+                    noFormat: noFormat ? parseInt(noFormat) : 1,
                     limit: limit ? parseInt(limit) : 20
                 }
             }
