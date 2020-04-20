@@ -10,7 +10,7 @@ export class ApiGatekeeper extends HttpFilter {
     private identities: any[];
     private rules: Rule[];
     private aclSvc: IACLService;
-    private secured: boolean;
+    private defaultRole: string;
 
     constructor({ ILogger, IDataAdapter }: any) {
         super();
@@ -20,11 +20,9 @@ export class ApiGatekeeper extends HttpFilter {
 
     init(param?: Record<string, any>): void {
         super.init(param);
-        let { authentication, authorization, secured } = this.param;
-        this.secured = secured;
+        let { authentication, authorization, defaultRole } = this.param;
+        this.defaultRole = defaultRole;
 
-        if (!this.secured)
-            return;
         this.adapter.init({ name: authentication });
         this.identities = this.adapter.select();
 
@@ -33,16 +31,16 @@ export class ApiGatekeeper extends HttpFilter {
 
         this.aclSvc = new ACLService();
         // Get distinct roles
-        let roles = Array.from(new Set(this.rules.map(r => r.role.trim().toLocaleLowerCase())));
+        let roles = Array.from(new Set(this.rules.map(r => r.role.trim().toLowerCase())));
         roles.forEach(r => this.aclSvc.createRole(r));
         this.rules.forEach(rule => this.aclSvc.createRule(
-            rule.action.trim().toLocaleLowerCase(),
-            rule.role.trim().toLocaleLowerCase())
+            rule.rule.trim().toLowerCase(),
+            rule.role.trim().toLowerCase())
         );
     }
 
     doFilter(req: ServletRequest, res: ServletResponse): void {
-        if (!this.secured)
+        if (!this.defaultRole)
             return;
 
         let { token } = req.param;
@@ -61,7 +59,7 @@ export class ApiGatekeeper extends HttpFilter {
         if (authorized) {
             let { groups: { action, resource } } = apiRegex.exec(req.url);
             action = action || 'read';
-            authorized = identity.roles.some(role => this.aclSvc.isAllowed(`${resource}.${action}`.toLocaleLowerCase(), role));
+            authorized = identity.roles.some(role => this.aclSvc.isAllowed(`${resource}.${action}`.toLowerCase(), role));
         }
 
         if (!authorized)
@@ -76,6 +74,9 @@ export class ApiGatekeeper extends HttpFilter {
                 roles: rec.roles.split(',').map(r => r.trim().toLocaleLowerCase())
             } : null;
         }
-        return null;
+        return {
+            token: null,
+            roles: [this.defaultRole]
+        };
     }
 }

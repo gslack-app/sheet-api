@@ -54,7 +54,7 @@ export interface Schema {
 }
 
 export interface Rule {
-    action: string;
+    rule: string;
     role: string;
 }
 

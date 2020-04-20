@@ -1,13 +1,11 @@
 import { ApiServlet, ApiNotFoundHandler } from "./api";
 import { ApiGatekeeper } from "./api-gatekeeper";
-import { Resource, IDataAdapter } from "./interfaces";
 import { SpreadsheetAdapter } from "./spreadsheet-adapter";
 import { ResourceHandler } from "./resource-handler";
 import { Configuration, LogFilter, StackdriverLogger, CacheProvider } from "../core/common";
 import { LogLevel, WebConfig, ICache } from "../core/interfaces";
 import { HttpServletResponse, HttpServletContainer, HttpServletRequest } from "../core/servlet";
 import { DependencyInjection } from "../core/vendors";
-import { extractSpreadsheetId } from "./functions";
 import { QueryAdapter } from "./query-adapter";
 
 let appName: string = PropertiesService.getScriptProperties().getProperty('app.name') || 'Sheet API';
@@ -45,7 +43,7 @@ export function initSettings(): void {
         let settings: any = {
             'app.name': 'Sheet API',
             'app.logLevel': '1',
-            'app.secured': '1',
+            'app.defaultRole': 'anonymous',
             'app.query.no_format': '1',
             'app.query.limit': '20'
         };
@@ -87,7 +85,7 @@ export function clearSystemCache(): void {
 
 function getConfig(): WebConfig {
     let logLevel: any = PropertiesService.getScriptProperties().getProperty('app.logLevel') || LogLevel.INFO;
-    let secured: any = PropertiesService.getScriptProperties().getProperty('app.secured');
+    let defaultRole: any = PropertiesService.getScriptProperties().getProperty('app.defaultRole') || 'anonymous';
     let noFormat: any = PropertiesService.getScriptProperties().getProperty('app.query.no_format');
     let limit: any = PropertiesService.getScriptProperties().getProperty('app.query.limit');
 
@@ -136,7 +134,7 @@ function getConfig(): WebConfig {
                 param: {
                     authentication: 'Authentication',
                     authorization: 'Authorization',
-                    secured: secured ? parseInt(secured) : 1
+                    defaultRole: defaultRole
                 }
             },
             {
