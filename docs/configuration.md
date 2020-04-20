@@ -17,10 +17,10 @@ You might need some modifications to let Sheet API match your needs. This can be
 | Property           | Default Value  | Description                                                          |
 | -------------------|----------------| ---------------------------------------------------------------------|
 | app.name           | Sheet API      | The name of app which is also the name of added menu in Google Sheet |
-| app.logLevel       | 1              | Min log level 0: Debug; 1: Info; 2: Error |
-| app.secured        | 1              | 0: no need token; 1: token required |
-| app.query.limit    | 20             | The number of items returned by GET action for all resources |
-| app.query.no_format| 1              | 0: use the formatted values; 1: use the underlying values |
+| app.logLevel       | 1              | Min log level 0: Debug; 1: Info; 2: Error                            |
+| app.secured        | 1              | 0: no need token; 1: token required                                  |
+| app.query.limit    | 20             | The number of items returned by GET action for all resources         |
+| app.query.no_format| 1              | 0: use the formatted values; 1: use the underlying values            |
 
 ### Clear System Cache
 
