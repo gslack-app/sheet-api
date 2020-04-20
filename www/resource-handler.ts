@@ -1,7 +1,7 @@
 import { extractSpreadsheetId, getErrorStatus } from "./functions";
 import { IDataAdapter, Resource } from "./interfaces";
 import { HttpFilter } from "../core/common";
-import { ILogger, ServletRequest, ICache, ServletResponse, HttpStatusCode } from "../core/interfaces";
+import { ILogger, ServletRequest, ServletResponse, HttpStatusCode } from "../core/interfaces";
 
 export class ResourceHandler extends HttpFilter {
     private logger: ILogger;
@@ -39,7 +39,7 @@ export class ResourceHandler extends HttpFilter {
             routeParam['_resource_'] = resource;
             routeParam.resource = rec.sheet;
             routeParam.spreadsheetId = extractSpreadsheetId(rec.url);
-            routeParam.resourceLimit = rec.limit;
+            routeParam.resourceLimit = rec.limitGet;
         }
         else {
             res.json(getErrorStatus(HttpStatusCode.NOT_FOUND)).end();

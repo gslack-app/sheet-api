@@ -69,7 +69,8 @@ export class QueryAdapter implements IQueryAdapter {
     exportToCsv(sql: string): string {
         this.format = 'csv';
         let dataRange = this.sheet.getRange(this.startRow, this.startColumn, this.numRows, this.numColumns);
-        return this.getSheetQueryResult(this.spreadsheetId, this.sheetName, dataRange.getA1Notation(), sql);
+        let data = this.getSheetQueryResult(this.spreadsheetId, this.sheetName, dataRange.getA1Notation(), sql);
+        return /"status":\s*"error"/i.test(data) ? `Invalid query` : data;
     }
 
     getColumns(): string[] {

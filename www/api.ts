@@ -31,8 +31,11 @@ export class ApiServlet extends HttpServlet {
     }
 
     async doGet(req: ServletRequest, res: ServletResponse): Promise<void> {
+        const orderRegex = /((?<field>\w+)\s*(?<dir>desc|asc)?\,?)+/i;
         let { resource, id, spreadsheetId, _resource_, resourceLimit } = req.var['_get_'];
         let offset: number = id ? 1 : req.param.offset || 1;
+        let orderBy: string = req.param.order || '';
+        orderBy = orderRegex.test(orderBy) ? orderBy : null;
         let queryLimit = req.param.limit;
         let limit: number = id ? 1 : queryLimit || resourceLimit || this.globalLimit;
         let where: string = req.param.where;
@@ -44,8 +47,6 @@ export class ApiServlet extends HttpServlet {
         limit *= 1;
         let schemas = this.getSchemas(_resource_);
         let restStatus: any;
-
-
 
         try {
             this.queryAdapter.init({ name: resource, id: spreadsheetId });
@@ -71,27 +72,35 @@ export class ApiServlet extends HttpServlet {
             }
 
             if (id) {
+                orderBy = null;
                 condition = `${this.queryAdapter.getIdByColumn(pk.column)} = ${pk.type == 'number' ? id : "'" + id + "'"}`;
             }
             else {
+                // Reserved words must be back-quoted if used as an identifier
+                let reservedIds = /(by|format|group|label|limit|offset|options|order|pivot|select|where)/gi;
                 // Convert alias to column id
-                if (where) {
-                    // Replace the longest alias first
-                    schemas.sort((s1, s2) => s2.alias.length - s1.alias.length);
-                    schemas.forEach(s => where = where.replace(new RegExp(s.alias, 'g'), this.queryAdapter.getIdByColumn(s.column)));
+                schemas.sort((s1, s2) => s2.alias.length - s1.alias.length);
+                // Replace the longest alias first
+                if (orderBy) {
+                    schemas.forEach(s => orderBy = orderBy.replace(new RegExp(s.alias, 'g'), this.queryAdapter.getIdByColumn(s.column)));
+                    orderBy = orderBy.replace(reservedIds, `"$1"`);
                 }
-
+                if (where) {
+                    schemas.forEach(s => where = where.replace(new RegExp(s.alias, 'g'), this.queryAdapter.getIdByColumn(s.column)));
+                    where = where.replace(reservedIds, `"$1"`);
+                }
                 condition = where;
             }
-            // order by
+            
             let selectPart = `select ${columns.join()}`;
             let wherePart = condition ? `where ${condition}` : '';
+            let orderPart = orderBy ? `order by ${orderBy}` : '';
             let limitPart = limit ? `limit ${limit}` : '';
             let offsetPart = `offset ${offset}`;
             let labelPart = `label ${labels.join()}`;
             let formatPart = formats.length ? `format ${formats.filter(f => f).join()}` : '';
             let optionsPart = `options ${this.queryOption}`;
-            let query = [selectPart, wherePart, limitPart, offsetPart, labelPart, formatPart, optionsPart].join(' ');
+            let query = [selectPart, wherePart, orderPart, limitPart, offsetPart, labelPart, formatPart, optionsPart].join(' ');
             this.logger.debug(query);
             let results = req.param.output == 'csv' ? this.queryAdapter.exportToCsv(query) : this.queryAdapter.query(query);
             req.param.output == 'csv'
