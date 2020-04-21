@@ -56,6 +56,14 @@ This error schema is composed of four parts:
 }
 ```
 
+Some common response codes include:
+
+- **400 Bad Request** — Client sent an invalid request — such as lacking required request body or parameter
+- **401 Unauthorized** — Client failed to authenticate with the server
+- **403 Forbidden** — Client authenticated but does not have permission to access the requested resource
+- **404 Not Found** — The requested resource does not exist
+- **500 Internal Server Error** — A generic error occurred on the server
+
 ## Read (GET)
 
 Resources are retrieved by performing HTTP GET requests. There are two main methods to retrieve resources. The first method involves requesting a list of resources, the second method is when a single resource is requested. Requests to a single resource are marked by the presence of the resource id in the URL of the request. 

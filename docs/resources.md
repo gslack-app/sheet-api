@@ -28,6 +28,7 @@ Every sheet has a primary column. This column is mandatory and cannot be deleted
 | format  | The format expression when outputing property value. See [Format Options](#format-options) |
 | seed    | The starting value for a **auto** primary column                      |
 | step    | The increment used by **auto** primary column                         |
+| validation | See [Data Validation](#data-validation)                            |
 
 ## Naming Syntax
 
@@ -45,3 +46,40 @@ Every sheet has a primary column. This column is mandatory and cannot be deleted
 
 - Formats date according to specification described in Java SE SimpleDateFormat class. Please visit the specification at http://docs.oracle.com/javase/7/docs/api/java/text/SimpleDateFormat.html
 - For string format, performs sprintf-like string formatting using '%'-style format strings.
+
+## Data Validation
+
+Data validation is focused on verifying an atomic data item. 
+
+### Basic Type Validators
+
+- boolean
+- date
+- number
+- string
+- empty - valid if value is null or undefined
+- regexp
+- required - valid if value is not null and not empty
+
+### Composite Type Validators
+
+- arrayOf(v:Validator) - valid if value is an array where every element is validated by v
+- oneOf(...refs:[]any) - valid if value is strictly deeply equal to any element of refs
+- optional(v:validator) - valid if value is either validated by v or null/undefined
+
+### Logical validators
+
+- and(...vs:[]validator) - valid if value is validated by every validator of vs
+- or(...vs:[]validator) - valid if value is validated by every validator of vs
+- not(v:validator) - valid if value is invalidated by v
+- is(ref:any) - valid if value is strictly deeply equal to ref
+
+### Examples
+
+- string('I am a string')
+- or(string, number)
+- and(string, regex(/abc/i))
+- optional(string)
+- is('test')
+- oneOf('apple', 'beer')
+- arrayOf(string)

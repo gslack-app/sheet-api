@@ -2,7 +2,15 @@
 
 Google Sheets API, Turn Google Spreadsheet Into API
 
-### Libraries
+## Documentation
+
+- [Getting started](docs/getting-started.md)
+- [Configuration](docs/configuration.md)
+- [Resources](docs/resources.md)
+- [Auth](docs/auth.md)
+- [API](docs/api.md)
+
+## Dependencies
 
 - [Access Control List](https://github.com/TechTeamer/acl)
 - [F-Validator](https://github.com/FallenMax/f-validator)

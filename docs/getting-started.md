@@ -2,7 +2,7 @@
 
 ## Download the latest version
 
-The latest release package is `sheet-api-v0.0.4.zip`. The release package contains 2 files that are `app-init.gs` and `app-v0.0.4.gs`.
+The latest release package is `sheet-api-v0.0.5.zip`. The release package contains 2 files that are `app-init.gs` and `app-v0.0.5.gs`.
 
 ## Creating a project from Google Sheets
 
@@ -20,7 +20,7 @@ Skip step 1 & 2 if you are performing the upgrade
 1. Select File > New > Script file to create a script file.
 2. Enter `app-init.gs` for the name of the new file and click OK to create it.
 3. Copy and paste the code of downloaded file `app-init.gs` into the script editor.
-4. Repeat step 1, 2, 3 for file `app-v0.0.4.gs`.
+4. Repeat step 1, 2, 3 for file `app-v0.0.5.gs`.
 
 ## Authorization
 
