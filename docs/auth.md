@@ -1,6 +1,6 @@
-## Auth
+# Auth
 
-### Authentication
+## Authentication
 
 All non-administrator roles should use a token key to access the API. Roles are assigned to a token on per-resource basis. This enables the flexibility of having a single token with different roles across different resources in the system. If no role is assigned to a token then access is denied. 
 
@@ -17,11 +17,11 @@ Token value need to have the properties that they:
 
 **Note**: You might use some online password generator tools to generate random & secured token.
 
-### Authorization
+## Authorization
 
 Sheet API offers granular role-based access control to all resources in the system. APIs can be given `guest` access by assigning a default role to an application, detailing what resources should be accessible without user authentication. This is useful, if your API has an open mode.
 
-#### Define Rules
+### Define Rules
 
 __All reject rules higher than any accept rule!__
 

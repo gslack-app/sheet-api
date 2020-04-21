@@ -1,4 +1,4 @@
-## Resources
+# Resources
 
 The Sheet API maps the sheet of Google spreadsheet to a resource name. You can add/delete/update resources exposed by Sheet API in sheet **Resources**
 
@@ -11,7 +11,7 @@ The Sheet API maps the sheet of Google spreadsheet to a resource name. You can a
 
 **Note**: The account that used to publish app should have the permission to access spreadsheets specified by urls.
 
-## Schemas
+# Schemas
 
 In Sheet API, schemas are dynamic. What this means is you can easily add/remove a schema without altering any code. The schema resource provides a way of managing the resource layout, usable fields, their storage types and requirements. By "schema", we mean in its traditional SQL database sense, i.e. a set of properties that define the layout of tables and their fields. You can add/delete/update schemas in sheet **Schemas**. 
 
@@ -29,19 +29,19 @@ Every sheet has a primary column. This column is mandatory and cannot be deleted
 | seed    | The starting value for a **auto** primary column                      |
 | step    | The increment used by **auto** primary column                         |
 
-### Naming Syntax
+## Naming Syntax
 
 - The name must be unique within a single sheet.
 - A worksheet name cannot exceed 31 characters.
 - You can use all alphanumeric characters but not the following special characters: \ , / , ** , ? , : , [ , ].
 - You can use spaces, underscores (_) and periods (.) in the name as word separators.
 
-### Primary Column Properties
+## Primary Column Properties
 
 - The column is always of the **string**/**number** column type
 - When you create a new item in sheet, the primary column is set automatically with primary **auto** & **uuid** 
 
-### Format Options
+## Format Options
 
 - Formats date according to specification described in Java SE SimpleDateFormat class. Please visit the specification at http://docs.oracle.com/javase/7/docs/api/java/text/SimpleDateFormat.html
 - For string format, performs sprintf-like string formatting using '%'-style format strings.

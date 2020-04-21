@@ -1,6 +1,6 @@
-## Configuration
+# Configuration
 
-### Initialize Settings
+## Initialize Settings
 
 You might need some modifications to let Sheet API match your needs. This can be done by changing some Sheet API settings. 
 
@@ -22,6 +22,6 @@ You might need some modifications to let Sheet API match your needs. This can be
 | app.query.limit    | 20             | The number of items returned by GET action for all resources         |
 | app.query.no_format| 1              | 0: use the formatted values; 1: use the underlying values            |
 
-### Clear System Cache
+## Clear System Cache
 
 To accelerate the speed, Sheet API loads all sheet data of the spreadsheet that hosts script project. Each time you update data and want the changes available immediately then you need to select **Sheet API** > **Clear System Cache**

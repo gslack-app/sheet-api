@@ -1,10 +1,10 @@
-## Getting started
+# Getting started
 
-### Download the latest version
+## Download the latest version
 
 The latest release package is `sheet-api-v0.0.4.zip`. The release package contains 2 files that are `app-init.gs` and `app-v0.0.4.gs`.
 
-### Creating a project from Google Sheets
+## Creating a project from Google Sheets
 
 Skip this step if you alread had a script project
 
@@ -13,7 +13,7 @@ Skip this step if you alread had a script project
 - Select **File** > **Save**.
 - Enter the name of your project and click OK to save the project.
 
-### Creating files
+## Creating files
 
 Skip step 1 & 2 if you are performing the upgrade
 
@@ -22,7 +22,7 @@ Skip step 1 & 2 if you are performing the upgrade
 3. Copy and paste the code of downloaded file `app-init.gs` into the script editor.
 4. Repeat step 1, 2, 3 for file `app-v0.0.4.gs`.
 
-### Authorization
+## Authorization
 
 Apps Script requires user authorization to access private data from built-in Google services or advanced Google services. Apps Script determines the authorization scopes (like access your Google Sheets files or Gmail) automatically, based on a scan of the code. 
 
@@ -36,7 +36,7 @@ Apps Script requires user authorization to access private data from built-in Goo
 
 ![Authorization](./images/new-auth.png)
 
-### Deploy Sheet API
+## Deploy Sheet API
 
 An Apps Script project deployment is a version of the script that is made available for use as a web app. A version is a numbered snapshot of your code. 
 

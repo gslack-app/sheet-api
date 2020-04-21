@@ -1,8 +1,8 @@
-## API
+# API
 
 The Sheet API is a Web API implementation of the Google Spreadsheet interface, allowing access to data on a specific sheet. Access is granted to everything based on the role access assigned to the token. You might call Sheet API RESTful or not ;-)
 
-### Layout
+## Layout
 
 The layout of the typical  Sheet API API call can best be described as follows...
 
@@ -20,33 +20,73 @@ with the following breakdown for each part...
 
 ## Verbs
 
-Due to the barrier of Google Apps Script, the API ONLY supports GET & POST verbs.
+Due to the barrier of Google Apps Script, Sheet API ONLY supports GET & POST verbs.
 
 ## Common Parameters
 
-#### API Token
+### API Token
 
 The API token is required in most Web API calls to your API, and is used as part of the system authentication process. You can generate token when you create each application and can be regenerated if compromised.
 
-#### Request Format
+### Request Format
 
 For request data formats, the default is JSON.
 
-#### Response Format
+### Response Format
 
 **application/json** is the default content type for the API.
 
-## Routes
+### Error Response
 
-### Default Routes
+This error schema is composed of four parts:
 
-| Verb  | Route                                            | Description                                 |
-| ------|--------------------------------------------------|---------------------------------------------|
-| GET   | https://<script_url>?url=/api/v1/posts           | Get the first 20 posts (the default limit is 20)|
-| GET   | https://<script_url>?url=/api/v1/posts/1         | Get a post with primary column value = 1    |
-| POST  | https://<script_url>?url=/api/v1/create/posts    | Create a new post with JSON payload         |
-| POST  | https://<script_url>?url=/api/v1/update/posts/1  | Update a post with primary column value = 1 with JSON payload    |
-| POST  | https://<script_url>?url=/api/v1/delete/posts/1  | Delete a post with primary column value = 1 |
+- type -  A URI identifier that categorizes the error, always starts with `error`
+- status - The HTTP response code
+- title - A brief, human-readable message about the error
+- detail - A human-readable explanation of the error detail (optional)
+
+**Examples**
+
+```json
+{
+  "type": "error",
+  "status": 404,
+  "title": "Not Found",
+  "detail": null
+}
+```
+
+## Read (GET)
+
+Resources are retrieved by performing HTTP GET requests. There are two main methods to retrieve resources. The first method involves requesting a list of resources, the second method is when a single resource is requested. Requests to a single resource are marked by the presence of the resource id in the URL of the request. 
+
+### Retrieving multiple resources
+
+Reading lists of resources (the default limit is 20) is done by requesting a resource endpoint without specifying an individual resources id. Sometimes resources require query string parameters or else they cannot produce valid lists.
+
+```
+GET https://<script_url>?url=/api/v1/<resource-name>
+```
+
+**Examples** Get the first 20 posts
+
+```
+GET https://<script_url>?url=/api/v1/posts
+```
+
+### Retrieving individual resources
+
+Resources are retrieved on an individual basis by providing the id of the resource in the URL of the resource endpoint. Some API endpoints also allow specifying individual resources by providing uniquely identifying query string parameters.
+
+```
+GET https://<script_url>?url=/api/v1/<resource-name>/<id>
+```
+
+**Examples**
+
+```
+GET https://<script_url>?url=/api/v1/posts/1
+```
 
 ### Filter
 
@@ -59,7 +99,7 @@ You can join multiple conditions using the logical operators `and`, `or`, and `n
 - `matches` - A (preg) regular expression match. haystack matches needle is true if the regular expression in needle matches haystack. Examples: `country matches '.*ia'` matches India and Nigeria, but not Indiana. Note that this is not a global search, so where country matches 'an' will not match 'Canada'.
 - `like` - A text search that supports two wildcards: `%`, which matches zero or more characters of any kind, and `_` (underscore), which matches any one character. This is similar to the SQL LIKE operator. Example:  `name like fre%` matches 'fre', 'fred', and 'freddy'.
 
-**Examples**:
+**Examples**
 
 ```
 salary >= 600
@@ -77,6 +117,8 @@ GET https://<script_url>?url=/api/v1/employees&where=(dept%3C%3E'Eng'+and+isSeni
 
 By default, GET operations, which return a list of requested items, return only the first 20 items. To get a different set of items, you can use the `offset` and `limit` parameters in the query string of the GET request.
 
+**Examples**
+
 ```
 GET https://<script_url>?url=/api/v1/employees&limit=20&offset=100
 ```
@@ -87,15 +129,132 @@ This query would return the 20 rows starting with the 100th row.
 
 Add `order` (ascending order by default)
 
+**Examples**
+
 ```
 GET https://<script_url>?url=/api/v1/employees&order=salary+desc
 ```
 
-For multiple fields, use the following format:
+For multiple fields, separate with commas:
 
 ```
 GET https://<script_url>?url=/api/v1/employees&order=salary+desc%2ChireDate+asc
 ```
 
+## Create (POST)
+
+Resources are created by sending HTTP POST requests to the API. The type of resource is determined by the URL of the request. The body of the request should contain a JSON object describing the resource to create. The object in the request body determines the initial state of the resource will be when it is created. Some resources require certain properties be provided when they are created, others can be created with an empty JSON object.
+
+```
+POST https://<script_url>?url=/api/v1/create/<resource-name>
+```
+
+**Examples**
+
+```
+POST https://<script_url>?url=/api/v1/create/contacts
+```
+
+JSON Payload
+
+```json
+{
+    "first_name": "Josephine",
+    "last_name": "Darakjy",
+    "company": "Chanay, Jeffrey A Esq",
+    "email": "josephine_darakjy@darakjy.org",
+    "url": "http://www.chanayjeffreyaesq.com",
+    "phone": "810-292-9388",
+    "state": "MI"
+  }
+```
+
+The successful result contain a JSON object describing the created resource.
+
+## Update (POST)
+
+Updates are performed by issuing POST PATCH requests to the URL that the resource is located at. When a POST request is performed, the properties of the request body are read, and if the resource has a property with the same name the property of the resource will be set to the new value.
+
+```
+POST https://<script_url>?url=/api/v1/update/<resource-name>/id
+```
+
+**Examples**
+
+```
+POST https://<script_url>?url=/api/v1/update/contacts/101
+```
+
+JSON Payload
+
+```json
+{
+    "first_name": "Minna",
+    "last_name": "Amigon"
+}
+```
+
+The successful result contain a JSON object describing the updated resource.
+
+## Delete (POST)
+
+Resources are deleted by sending an HTTP POST request to the URL that the resource is located at. This is the URL that contains the id of the resource.
+
+```
+POST https://<script_url>?url=/api/v1/delete/<resource-name>/id
+```
+
+**Examples**
+
+```
+POST https://<script_url>?url=/api/v1/delete/contacts/101
+```
+
+## Bulk Create/Update/Delete (POST)
+
+Sheet API that allows a user to send a collection of `resource` in single request using param `batch=1`
+
+**Examples**
+
+```
+POST https://<script_url>?url=/api/v1/create/contacts?batch=1
+POST https://<script_url>?url=/api/v1/update/contacts?batch=1
+POST https://<script_url>?url=/api/v1/delete/contacts?batch=1
+```
+
+The request body for `Create` or `Update` action
+
+```json
+[
+  {
+    "id": 101,
+    "first_name": "Josephine",
+    "last_name": "Darakjy",
+    "company": "Chanay, Jeffrey A Esq",
+    "email": "josephine_darakjy@darakjy.org",
+    "url": "http://www.chanayjeffreyaesq.com",
+    "phone": "810-292-9388",
+    "state": "MI"
+  },
+  {
+    "id": 102,
+    "first_name": "Simona",
+    "last_name": "Morasca",
+    "company": "Chapman, Ross E Esq",
+    "email": "simona@morasca.com",
+    "url": "http://www.chapmanrosseesq.com",
+    "phone": "419-503-2484",
+    "state": "OH"
+  }
+]
+```
+
+for `Delete` action, the request body should be the array of resource id
+
+**Examples**
+
+```json
+[101, 102]
+```
 
 
