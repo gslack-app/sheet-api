@@ -131,7 +131,7 @@ By default, GET operations, which return a list of requested items, return only 
 GET https://<script_url>?url=/api/v1/employees&limit=20&offset=100
 ```
 
-This query would return the 20 rows starting with the 100th row.
+This query would return the 20 rows starting with the 100th row. To get all rows, you should use `limit=0` as query param and set `limitGet` of resource to 0 in sheet `Schemas`.
 
 ### Sort
 

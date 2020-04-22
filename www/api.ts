@@ -36,11 +36,14 @@ export class ApiServlet extends HttpServlet {
         let offset: number = id ? 1 : req.param.offset || 1;
         let orderBy: string = req.param.order || '';
         orderBy = orderRegex.test(orderBy) ? orderBy : null;
-        let queryLimit = req.param.limit;
+        resourceLimit = parseInt(resourceLimit);
+        let queryLimit = parseInt(req.param.limit);
         let limit: number = id ? 1 : queryLimit || resourceLimit || this.globalLimit;
         let where: string = req.param.where;
+        this.logger.debug(`limit ${limit} queryLimit ${queryLimit} resourceLimit ${resourceLimit} globalLimit ${this.globalLimit}`);
+
         // Check if unlimited query
-        if (!id && queryLimit == 0 && resourceLimit == 0)
+        if (!id && queryLimit === 0 && resourceLimit === 0)
             limit = 0;
         // Convert to number
         offset *= 0;
@@ -91,7 +94,7 @@ export class ApiServlet extends HttpServlet {
                 }
                 condition = where;
             }
-            
+
             let selectPart = `select ${columns.join()}`;
             let wherePart = condition ? `where ${condition}` : '';
             let orderPart = orderBy ? `order by ${orderBy}` : '';
