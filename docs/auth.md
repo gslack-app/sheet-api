@@ -21,7 +21,14 @@ Token value need to have the properties that they:
 
 Sheet API offers granular role-based access control to all resources in the system. APIs can be given `guest` access by assigning a default role to an application, detailing what resources should be accessible without user authentication. This is useful, if your API has an open mode.
 
-### Define Rules
+You can define rules & applied roles in sheet **Authorization**.
+
+| Column  | Description                             |
+| --------|-----------------------------------------|
+| rule    | Role name                               |
+| roles   | Multiple roles separated by commas      |
+
+### Rule Definition
 
 __All reject rules higher than any accept rule!__
 
@@ -52,10 +59,3 @@ resource.action
 
 - **resource** - The resource name
 - **action** - The action might be **create**, **read**, **update**, **delete** and __*__ covers 4 actions. By default, GET request (verb GET) equals to   **read* action.
-
-You could list all rules in sheet **Authorization**
-
-| Column  | Description                             |
-| --------|-----------------------------------------|
-| rule    | Rule name                               |
-| role    | The role will be applied by rule        |

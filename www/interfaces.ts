@@ -55,7 +55,7 @@ export interface Schema {
 
 export interface Rule {
     rule: string;
-    role: string;
+    roles: string[];
 }
 
 export interface IACLService {

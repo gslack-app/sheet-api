@@ -21,7 +21,7 @@ export class ApiGatekeeper extends HttpFilter {
     init(param?: Record<string, any>): void {
         super.init(param);
         let { authentication, authorization, defaultRole } = this.param;
-        this.defaultRole = defaultRole;
+        this.defaultRole = defaultRole ? defaultRole.trim().toLowerCase() : null;
 
         this.adapter.init({ name: authentication });
         this.identities = this.adapter.select();
@@ -30,19 +30,20 @@ export class ApiGatekeeper extends HttpFilter {
         this.rules = this.adapter.select();
 
         this.aclSvc = new ACLService();
+        let allRoles = this.rules.map(r => r.roles as any).join();
         // Get distinct roles
-        let roles = Array.from(new Set(this.rules.map(r => r.role.trim().toLowerCase())));
-        roles.forEach(r => this.aclSvc.createRole(r));
-        this.rules.forEach(rule => this.aclSvc.createRule(
-            rule.rule.trim().toLowerCase(),
-            rule.role.trim().toLowerCase())
-        );
+        let uniqueRoles = allRoles.split(',')
+            .map(r => r.trim().toLowerCase())
+            .filter((value, index, self) => self.indexOf(value) === index);
+        uniqueRoles.forEach(r => this.aclSvc.createRole(r));
+        this.rules.forEach(r => {
+            let rule = r.rule.trim().toLowerCase();
+            let roles: string[] = (r.roles as any).split(',');
+            roles.forEach(role => this.aclSvc.createRule(rule, role.trim().toLowerCase()));
+        });
     }
 
     doFilter(req: ServletRequest, res: ServletResponse): void {
-        if (!this.defaultRole)
-            return;
-
         let { token } = req.param;
         let identity = this.getIdenity(token);
 
@@ -74,9 +75,9 @@ export class ApiGatekeeper extends HttpFilter {
                 roles: rec.roles.split(',').map(r => r.trim().toLocaleLowerCase())
             } : null;
         }
-        return {
+        return this.defaultRole ? {
             token: null,
             roles: [this.defaultRole]
-        };
+        } : null;
     }
 }

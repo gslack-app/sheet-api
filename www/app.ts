@@ -85,7 +85,7 @@ export function clearSystemCache(): void {
 
 function getConfig(): WebConfig {
     let logLevel: any = PropertiesService.getScriptProperties().getProperty('app.logLevel') || LogLevel.INFO;
-    let defaultRole: any = PropertiesService.getScriptProperties().getProperty('app.defaultRole') || 'anonymous';
+    let defaultRole: any = PropertiesService.getScriptProperties().getProperty('app.defaultRole');
     let noFormat: any = PropertiesService.getScriptProperties().getProperty('app.query.no_format');
     let limit: any = PropertiesService.getScriptProperties().getProperty('app.query.limit');
 
