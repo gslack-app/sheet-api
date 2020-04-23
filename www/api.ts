@@ -76,7 +76,7 @@ export class ApiServlet extends HttpServlet {
 
             if (id) {
                 orderBy = null;
-                condition = `${this.queryAdapter.getIdByColumn(pk.column)} = ${pk.type == 'number' ? id : "'" + id + "'"}`;
+                condition = `${this.queryAdapter.getIdByColumn(pk.column)} = ${this.formatLiteral(pk.type, id)}`;
             }
             else {
                 // Reserved words must be back-quoted if used as an identifier
@@ -248,6 +248,21 @@ export class ApiServlet extends HttpServlet {
             });
         });
         return errors.length ? errors : null;
+    }
+
+    protected formatLiteral(type: string, value: any): string {
+        switch (type) {
+            case 'number':
+                return value;
+            case 'date':
+                return `date '${value}'`;
+            case 'time':
+                return `timeofday '${value}'`;
+            case 'datetime':
+                return `datetime '${value}'`;
+            default:
+                return `'${value}'`;
+        }
     }
 
     protected getValidators(): any {

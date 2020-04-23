@@ -132,8 +132,10 @@ export class QueryAdapter implements IQueryAdapter {
 
                 switch (type) {
                     case 'date':
-                        let value = eval(`new ${col.v}`);
-                        item[name] = pattern ? Utilities.formatDate(value, Session.getScriptTimeZone(), pattern) : value;
+                        if (col.v) {
+                            let value = eval(`new ${col.v}`);
+                            item[name] = pattern ? Utilities.formatDate(value, Session.getScriptTimeZone(), pattern) : value;
+                        }
                         break;
                     default:
                         item[name] = col.v;
