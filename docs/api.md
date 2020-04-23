@@ -177,7 +177,11 @@ JSON Payload
   }
 ```
 
-The successful result contain a JSON object describing the created resource.
+### Return Value
+
+The successful result contain an array of created object.
+
+UPDATE.
 
 ## Update (POST)
 
@@ -202,7 +206,9 @@ JSON Payload
 }
 ```
 
-The successful result contain a JSON object describing the updated resource.
+### Return Value
+
+The successful result contain an array of updated object.
 
 ## Delete (POST)
 
@@ -217,6 +223,10 @@ POST https://<script_url>?url=/api/v1/delete/<resource-name>/id
 ```
 POST https://<script_url>?url=/api/v1/delete/contacts/101
 ```
+
+### Return Value
+
+The successful result contain an array of deleted object.
 
 ## Bulk Create/Update/Delete (POST)
 
@@ -265,4 +275,7 @@ for `Delete` action, the request body should be the array of resource id
 [101, 102]
 ```
 
+### Return Value
+
+The successful result contain an array of created/updateddeleted objects.
 

@@ -32,10 +32,9 @@ Every sheet has a primary column. This column is mandatory and cannot be deleted
 
 ## Naming Syntax
 
-- The name must be unique within a single sheet.
-- A worksheet name cannot exceed 31 characters.
-- You can use all alphanumeric characters but not the following special characters: \ , / , ** , ? , : , [ , ].
-- You can use spaces, underscores (_) and periods (.) in the name as word separators.
+- An identifier must begin with a letter, an underscore. The remaining part of identifier can contain letters, digits, ( _ ), ( - ), ( . ) and ( @ ).
+- Whitespaces are not allowed. Neither it can have symbols other than letter, digits, ( _ ), ( - ), ( . ) and ( @ ).
+- The maximum length of a valid name is 36 characters.
 
 ## Primary Column Properties
 

@@ -107,15 +107,15 @@ function getConfig(): WebConfig {
                 method: 'GET',
                 handler: 'ApiServlet',
                 patterns: [
-                    /^\/api\/v1\/(?<resource>[\w\-_]+)\/?(?<id>[\w\-_@\.]+)?\/?$/i
+                    /^\/api\/v1\/(?<resource>[^\s\/]{2,36})\/?(?<id>[^\s\/]{2,36})?(\/|$)/i
                 ]
             },
             {
                 method: 'POST',
                 handler: 'ApiServlet',
                 patterns: [
-                    /^\/api\/v1\/(?<action>(create))\/(?<resource>[\w\-_]+)\/?$/i,
-                    /^\/api\/v1\/(?<action>(update|delete))\/(?<resource>[\w\-_]+)\/?(?<id>[\w\-_@\.]+)?\/?$/i
+                    /^\/api\/v1\/(?<action>(create))\/(?<resource>[^\s\/]{2,36})(\/|$)/i,
+                    /^\/api\/v1\/(?<action>(update|delete))\/(?<resource>[^\s\/]{2,36})\/?(?<id>[^\s\/]{2,36})?(\/|$)/i
                 ]
             }
         ],
