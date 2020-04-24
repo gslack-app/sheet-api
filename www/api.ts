@@ -6,7 +6,6 @@ import { json } from "../core/common";
 import { error, object, array, string, number, boolean, date, regexp, Null, Undefined, empty, regex, not, any, and, or, optional, is, oneOf, like, objectOf, arrayOf } from 'f-validator';
 
 export class ApiServlet extends HttpServlet {
-    protected readonly DefaultPageSize: number = 20;
     protected queryAdapter: IQueryAdapter;
     protected logger: ILogger;
     protected dataAdapter: IDataAdapter;

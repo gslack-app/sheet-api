@@ -161,6 +161,6 @@ function getDI(): DependencyInjection {
         { name: 'LogFilter', useClass: LogFilter, deps: ['ILogger'] },
         { name: 'ApiServlet', useClass: ApiServlet, deps: ['ILogger', 'IQueryAdapter', 'IDataAdapter'] },
         { name: 'ApiGatekeeper', useClass: ApiGatekeeper, deps: ['ILogger', 'IDataAdapter'] },
-        { name: 'ResourceHandler', useClass: ResourceHandler, deps: ['ILogger', 'IDataAdapter'] }
+        { name: 'ResourceHandler', useClass: ResourceHandler, deps: ['IDataAdapter'] }
     ]);
 }

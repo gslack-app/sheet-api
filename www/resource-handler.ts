@@ -1,16 +1,14 @@
 import { extractSpreadsheetId, getErrorStatus } from "./functions";
 import { IDataAdapter, Resource } from "./interfaces";
 import { HttpFilter } from "../core/common";
-import { ILogger, ServletRequest, ServletResponse, HttpStatusCode } from "../core/interfaces";
+import { ServletRequest, ServletResponse, HttpStatusCode } from "../core/interfaces";
 
 export class ResourceHandler extends HttpFilter {
-    private logger: ILogger;
     private adapter: IDataAdapter;
     private resources: Resource[];
 
-    constructor({ ILogger, IDataAdapter }: any) {
+    constructor({ IDataAdapter }: any) {
         super();
-        this.logger = ILogger;
         this.adapter = IDataAdapter;
     }
 
