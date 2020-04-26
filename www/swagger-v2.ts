@@ -1,7 +1,7 @@
 import { Schema } from "./interfaces";
 
 declare type InType = 'query' | 'path' | 'header' | 'body';
-declare type DataType = 'integer' | 'number' | 'string' | 'boolean' | 'array';
+declare type DataType = 'integer' | 'number' | 'string' | 'boolean' | 'array' | 'object';
 declare type FormatType = 'int32' | 'float' | 'double' | 'byte' | 'binary' | 'date' | 'date-time' | 'password';
 
 interface Info {
@@ -24,6 +24,17 @@ interface License {
     url?: string;
 }
 
+interface ExternalDoc {
+    url: string;
+    description?: string;
+}
+
+interface Tag {
+    name: string;
+    description?: string;
+    externalDocs?: ExternalDoc;
+}
+
 interface PathItem {
     $ref?: string;
     get?: Operation;
@@ -32,12 +43,15 @@ interface PathItem {
 }
 
 interface Operation {
+    tags?: string[];
+    summary?: string;
     description?: string;
     operationId?: string;
     consumes?: string[];
     produces?: string[];
     parameters?: (Parameter | Reference)[];
     responses: Record<'default' | string, Response>;
+    security?: Record<string, string[]>;
 }
 
 interface Parameter extends Items {
@@ -89,6 +103,7 @@ interface Response {
 }
 
 interface Definitions {
+    type: DataType;
     properties: Record<string, Items>;
     required?: string[]
 }
@@ -100,10 +115,10 @@ interface SecurityScheme {
     name?: string;
     in?: 'query' | 'header';
     // Validity: oauth2 
-    flow: 'implicit' | 'password' | 'application' | 'accessCode';
+    flow?: 'implicit' | 'password' | 'application' | 'accessCode';
     authorizationUrl?: string;
     tokenUrl?: string;
-    scopes: Record<string, string>;
+    scopes?: Record<string, string>;
 }
 
 export class Swagger {
@@ -111,14 +126,14 @@ export class Swagger {
     info: Info;
     paths: Record<string, PathItem>;
     definitions: Record<string, Definitions>;
-    security: Record<string, string[]>;
+    securityDefinitions: Record<string, SecurityScheme>;
 
-    generate(schemas: Schema[], version: string): void {
-        this.info = this.generateInfo(version);
-        this.paths = this.generatePaths(schemas);
-        this.definitions = this.generateDefinitions(schemas);
-        this.security = this.generateSecurity();
-
+    generate(schemas: Schema[], params: Record<string, string>): void {
+        let resources = schemas.map(r => r.resource).filter((value, index, self) => self.indexOf(value) === index);
+        this.info = this.generateInfo(params);
+        this.paths = this.generatePaths(resources, schemas);
+        this.definitions = this.generateDefinitions(resources, schemas);
+        this.securityDefinitions = this.generateSecurityDefinitions();
         this.doc = {
             swagger: '2.0',
             info: this.info,
@@ -127,25 +142,31 @@ export class Swagger {
             schemes: ['https'],
             consumes: ['application/json'],
             produces: ['application/json'],
+            tags: this.generateTags(resources),
             paths: this.paths,
             definitions: this.definitions,
             parameters: this.createSharedQueryParam(),
             //responses: {},
-            securityDefinitions: {},
-            security: this.security
+            securityDefinitions: this.securityDefinitions
         };
+        this.doc.definitions['GenericError'] = this.generateErrorDefinition();
     }
 
     getJSON(): string {
         return JSON.stringify(this.doc);
     }
 
-    private generateInfo(version: string): Info {
-        let appName: string = PropertiesService.getScriptProperties().getProperty('app.name') || 'Sheet API';
-        let appVer: string = PropertiesService.getScriptProperties().getProperty('app.version') || '1.0.0';
+    private generateInfo(params: Record<string, string>): Info {
+        let { title, description, version, name, url, email } = params;
         let obj: Info = {
-            title: `${appName} REST API`,
-            version: appVer
+            title: title,
+            description: description,
+            version: version,
+            contact: {
+                name: name,
+                url: url,
+                email: email
+            }
         };
         return obj;
     }
@@ -156,10 +177,16 @@ export class Swagger {
         return `${url}?url=/api`;
     }
 
-    private generatePaths(recs: Schema[]): Record<string, PathItem> {
+    private generateTags(resources: string[]): Tag[] {
+        return resources.map(r => {
+            let t: Tag = { name: r };
+            return t;
+        });
+    }
+
+    private generatePaths(resources: string[], recs: Schema[]): Record<string, PathItem> {
         let paths: Record<string, PathItem> = {};
-        let types = recs.map(r => r.resource).filter((value, index, self) => self.indexOf(value) === index);
-        types.forEach(type => {
+        resources.forEach(type => {
             let items = recs.filter(r => r.resource === type);
             let pathItem: PathItem = {};
             pathItem.get = this.createReadOperation(type, items);
@@ -170,40 +197,44 @@ export class Swagger {
 
     private createReadOperation(resource: string, recs: Schema[]): Operation {
         let op: Operation = {
+            tags: [resource],
             parameters: [],
-            responses: {}
+            responses: {},
+            security: { 'apiKey': [] }
+
         };
         op.parameters.push({ $ref: '#/parameters/offset' });
         op.parameters.push({ $ref: '#/parameters/limit' });
-        op.parameters.push({ $ref: '#/parameters/where' });
+        op.parameters.push({ $ref: '#/parameters/filter' });
         op.parameters.push({ $ref: '#/parameters/order' });
-        op.parameters.push({ $ref: '#/parameters/token' });
+        op.parameters.push({ $ref: '#/parameters/apiKey' });
         op.responses['200'] = {
             description: 'Successful operation',
             schema: {
                 $ref: `#/definitions/${resource}`
             }
-        }
+        };
+        Object.assign(op.responses, this.generateErrorResponse());
         return op;
     }
 
     private createSharedQueryParam(): Record<string, Parameter> {
         let params: Record<string, Parameter> = {};
-        params['offset'] = this.createParameter('offset', 'query', 'integer', 0);
-        params['limit'] = this.createParameter('limit', 'query', 'integer', 20);
-        params['where'] = this.createParameter('where', 'query', 'string');
-        params['order'] = this.createParameter('order', 'query', 'string');
-        params['token'] = this.createParameter('token', 'query', 'string');
+        params['offset'] = this.createParameter('offset', 'query', 'integer');
+        params['limit'] = this.createParameter('limit', 'query', 'integer');
+        params['where'] = this.createParameter('filter', 'query', 'string');
+        params['order'] = this.createParameter('orderby', 'query', 'string');
+        params['apiKey'] = this.createParameter('apiKey', 'query', 'string');
         return params;
     }
 
-    private generateDefinitions(recs: Schema[]): Record<string, Definitions> {
+    private generateDefinitions(resources: string[], recs: Schema[]): Record<string, Definitions> {
         let schemas: Record<string, Definitions> = {};
-        let types = recs.map(r => r.resource).filter((value, index, self) => self.indexOf(value) === index);
-        types.forEach(type => {
+        resources.forEach(type => {
             let items = recs.filter(r => r.resource === type);
             let requiredProps = items.filter(i => i.validation && !i.validation.includes('optional')).map(i => i.alias);
             let schema: Definitions = {
+                type: 'object',
                 properties: {}
             };
             if (requiredProps.length)
@@ -212,6 +243,65 @@ export class Swagger {
             schemas[type] = schema;
         });
         return schemas;
+    }
+
+    private generateErrorDefinition(): Definitions {
+        let errorSchema: Definitions = {
+            type: 'object',
+            properties: {
+                type: {
+                    type: 'string',
+                    enum: ['error']
+                },
+                status: {
+                    type: 'string',
+                    enum: ['400', '401', '403', '404', '500']
+                },
+                title: {
+                    type: 'string'
+                },
+                detail: {
+                    type: 'string'
+                }
+            }
+        };
+        return errorSchema;
+    }
+
+    private generateErrorResponse(): Record<string, Response> {
+        let errorType = 'GenericError';
+        return {
+            '400': {
+                description: 'Bad Request',
+                schema: {
+                    $ref: `#/definitions/${errorType}`
+                }
+            },
+            '401': {
+                description: 'Unauthorized',
+                schema: {
+                    $ref: `#/definitions/${errorType}`
+                }
+            },
+            '403': {
+                description: 'Forbidden',
+                schema: {
+                    $ref: `#/definitions/${errorType}`
+                }
+            },
+            '404': {
+                description: 'Not Found',
+                schema: {
+                    $ref: `#/definitions/${errorType}`
+                }
+            },
+            '500': {
+                description: 'Internal Server Error',
+                schema: {
+                    $ref: `#/definitions/${errorType}`
+                }
+            }
+        };
     }
 
     private createSchemaObject(rec: Schema): SchemaObject {
@@ -245,9 +335,13 @@ export class Swagger {
 
     }
 
-    private generateSecurity(): Record<string, string[]> {
+    private generateSecurityDefinitions(): Record<string, SecurityScheme> {
         return {
-            api_key: []
-        }
+            'apiKey': {
+                type: 'apiKey',
+                name: "apiKey",
+                in: 'query'
+            }
+        };
     }
 }
