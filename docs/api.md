@@ -40,7 +40,7 @@ For request data formats, the default is JSON.
 
 This error schema is composed of four parts:
 
-- type -  A URI identifier that categorizes the error, always starts with `error`
+- type -  An URI identifier that categorizes the error, always starts with `error`
 - status - The HTTP response code
 - title - A brief, human-readable message about the error
 - detail - A human-readable explanation of the error detail (optional)
