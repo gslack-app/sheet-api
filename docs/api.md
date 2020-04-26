@@ -1,13 +1,13 @@
 # API
 
-The Sheet API is a Web API implementation of the Google Spreadsheet interface, allowing access to data on a specific sheet. Access is granted to everything based on the role access assigned to the token. You might call Sheet API RESTful or not ;-)
+The Sheet API is a Web API implementation of the Google Spreadsheet interface, allowing access to data on a specific sheet. Access is granted to everything based on the role access assigned to the apiKey. You might call Sheet API RESTful or not ;-)
 
 ## Layout
 
 The layout of the typical  Sheet API API call can best be described as follows...
 
 ```
-<verb> https://<script_url>?url=/api/v1/<resource-path>[&<param-name>=<param-value>]
+<verb> https://<script_url>?url=/api/<resource-path>[&<param-name>=<param-value>]
 ```
 
 with the following breakdown for each part...
@@ -24,9 +24,9 @@ Due to the barrier of Google Apps Script, Sheet API ONLY supports GET & POST ver
 
 ## Common Parameters
 
-### API Token
+### API Key
 
-The API token is required in most Web API calls to your API, and is used as part of the system authentication process. You can generate token when you create each application and can be regenerated if compromised.
+The API key is required in most Web API calls to your API, and is used as part of the system authentication process. You can generate apiKey when you create each application and can be regenerated if compromised.
 
 ### Request Format
 
@@ -73,13 +73,13 @@ Resources are retrieved by performing HTTP GET requests. There are two main meth
 Reading lists of resources (the default limit is 20) is done by requesting a resource endpoint without specifying an individual resources id. Sometimes resources require query string parameters or else they cannot produce valid lists.
 
 ```
-GET https://<script_url>?url=/api/v1/<resource-name>
+GET https://<script_url>?url=/api/<resource-name>
 ```
 
 **Examples** Get the first 20 posts
 
 ```
-GET https://<script_url>?url=/api/v1/posts
+GET https://<script_url>?url=/api/posts
 ```
 
 ### Retrieving individual resources
@@ -87,13 +87,13 @@ GET https://<script_url>?url=/api/v1/posts
 Resources are retrieved on an individual basis by providing the id of the resource in the URL of the resource endpoint. Some API endpoints also allow specifying individual resources by providing uniquely identifying query string parameters.
 
 ```
-GET https://<script_url>?url=/api/v1/<resource-name>/<id>
+GET https://<script_url>?url=/api/<resource-name>/<id>
 ```
 
 **Examples**
 
 ```
-GET https://<script_url>?url=/api/v1/posts/1
+GET https://<script_url>?url=/api/posts/1
 ```
 
 ### Filter
@@ -116,9 +116,9 @@ dept != 'Eng' and date '2005-01-21' < hireDate
 ```
 
 ```
-GET https://<script_url>?url=/api/v1/employees&where=salary+%3E%3D+600
-GET https://<script_url>?url=/api/v1/employees&where=dept+!%3D+'Eng'+and+date+'2005-01-21'+%3C+hireDate
-GET https://<script_url>?url=/api/v1/employees&where=(dept%3C%3E'Eng'+and+isSenior%3Dtrue)+or+(dept%3D'Sales')+or+seniorityStartTime+is+null
+GET https://<script_url>?url=/api/employees&where=salary+%3E%3D+600
+GET https://<script_url>?url=/api/employees&where=dept+!%3D+'Eng'+and+date+'2005-01-21'+%3C+hireDate
+GET https://<script_url>?url=/api/employees&where=(dept%3C%3E'Eng'+and+isSenior%3Dtrue)+or+(dept%3D'Sales')+or+seniorityStartTime+is+null
 ```
 
 ### Paginate
@@ -128,7 +128,7 @@ By default, GET operations, which return a list of requested items, return only 
 **Examples**
 
 ```
-GET https://<script_url>?url=/api/v1/employees&limit=20&offset=100
+GET https://<script_url>?url=/api/employees&limit=20&offset=100
 ```
 
 This query would return the 20 rows starting with the 100th row. To get all rows, you should use `limit=0` as query param and set `limitGet` of resource to 0 in sheet `Schemas`.
@@ -140,13 +140,13 @@ Add `order` (ascending order by default)
 **Examples**
 
 ```
-GET https://<script_url>?url=/api/v1/employees&order=salary+desc
+GET https://<script_url>?url=/api/employees&order=salary+desc
 ```
 
 For multiple fields, separate with commas:
 
 ```
-GET https://<script_url>?url=/api/v1/employees&order=salary+desc%2ChireDate+asc
+GET https://<script_url>?url=/api/employees&order=salary+desc%2ChireDate+asc
 ```
 
 ## Create (POST)
@@ -154,13 +154,13 @@ GET https://<script_url>?url=/api/v1/employees&order=salary+desc%2ChireDate+asc
 Resources are created by sending HTTP POST requests to the API. The type of resource is determined by the URL of the request. The body of the request should contain a JSON object describing the resource to create. The object in the request body determines the initial state of the resource will be when it is created. Some resources require certain properties be provided when they are created, others can be created with an empty JSON object.
 
 ```
-POST https://<script_url>?url=/api/v1/create/<resource-name>
+POST https://<script_url>?url=/api/create/<resource-name>
 ```
 
 **Examples**
 
 ```
-POST https://<script_url>?url=/api/v1/create/contacts
+POST https://<script_url>?url=/api/create/contacts
 ```
 
 JSON Payload
@@ -188,13 +188,13 @@ UPDATE.
 Updates are performed by issuing POST PATCH requests to the URL that the resource is located at. When a POST request is performed, the properties of the request body are read, and if the resource has a property with the same name the property of the resource will be set to the new value.
 
 ```
-POST https://<script_url>?url=/api/v1/update/<resource-name>/id
+POST https://<script_url>?url=/api/update/<resource-name>/id
 ```
 
 **Examples**
 
 ```
-POST https://<script_url>?url=/api/v1/update/contacts/101
+POST https://<script_url>?url=/api/update/contacts/101
 ```
 
 JSON Payload
@@ -215,13 +215,13 @@ The successful result contain an array of updated object.
 Resources are deleted by sending an HTTP POST request to the URL that the resource is located at. This is the URL that contains the id of the resource.
 
 ```
-POST https://<script_url>?url=/api/v1/delete/<resource-name>/id
+POST https://<script_url>?url=/api/delete/<resource-name>/id
 ```
 
 **Examples**
 
 ```
-POST https://<script_url>?url=/api/v1/delete/contacts/101
+POST https://<script_url>?url=/api/delete/contacts/101
 ```
 
 ### Return Value
@@ -235,9 +235,9 @@ Sheet API that allows a user to send a collection of `resource` in single reques
 **Examples**
 
 ```
-POST https://<script_url>?url=/api/v1/create/contacts?batch=1
-POST https://<script_url>?url=/api/v1/update/contacts?batch=1
-POST https://<script_url>?url=/api/v1/delete/contacts?batch=1
+POST https://<script_url>?url=/api/create/contacts?batch=1
+POST https://<script_url>?url=/api/update/contacts?batch=1
+POST https://<script_url>?url=/api/delete/contacts?batch=1
 ```
 
 The request body for `Create` or `Update` action

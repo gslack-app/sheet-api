@@ -17,8 +17,9 @@ You might need some modifications to let Sheet API match your needs. This can be
 | Property           | Default Value  | Description                                                          |
 | -------------------|----------------| ---------------------------------------------------------------------|
 | app.name           | Sheet API      | The name of app which is also the name of added menu in Google Sheet |
+| app.version        | 1.0.0          | The version of REST API, used with Swagger specification             |
 | app.logLevel       | 1              | Min log level 0: Debug; 1: Info; 2: Error                            |
-| app.defaultRole    | anonymous      | The default role will be applied when no token included              |
+| app.defaultRole    | anonymous      | The default role will be applied when no apiKey included             |
 | app.query.limit    | 20             | The number of items returned by GET action for all resources         |
 | app.query.no_format| 1              | 0: use the formatted values; 1: use the underlying values            |
 

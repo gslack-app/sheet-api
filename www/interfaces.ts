@@ -29,7 +29,7 @@ export interface IQueryAdapter {
 }
 
 export interface Identity {
-    token: string;
+    apiKey: string;
     roles: string[];
 }
 

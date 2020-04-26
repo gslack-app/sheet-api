@@ -44,18 +44,18 @@ export class ApiGatekeeper extends HttpFilter {
     }
 
     doFilter(req: ServletRequest, res: ServletResponse): void {
-        let { token } = req.param;
-        let identity = this.getIdenity(token);
+        let { apiKey } = req.param;
+        let identity = this.getIdenity(apiKey);
 
         // Authentication check
         if (!identity) {
-            this.logger.info(`Token ${token} is invalid`);
+            this.logger.info(`API key ${apiKey} is invalid`);
             res.json(getErrorStatus(HttpStatusCode.UNAUTHORIZED)).end();
             return;
         }
 
         // Authorization check
-        let apiRegex = /^\/api\/v1\/(?<action>(create|update|delete))?\/?(?<resource>[^\s\/]{2,36})\/?(?<id>[^\s\/]{2,36})?(\/|$)/i;
+        let apiRegex = /^\/api\/(?<action>(create|update|delete))?\/?(?<resource>[^\s\/]{2,36})\/?(?<id>[^\s\/]{2,36})?(\/|$)/i;
         let authorized = apiRegex.test(req.url);
         if (authorized) {
             let { groups: { action, resource } } = apiRegex.exec(req.url);
@@ -67,16 +67,16 @@ export class ApiGatekeeper extends HttpFilter {
             res.json(getErrorStatus(HttpStatusCode.FORBIDDEN)).end();
     }
 
-    private getIdenity(token: string): Identity {
-        if (token) {
-            let rec = this.identities.filter(id => id.token == token)[0];
+    private getIdenity(apiKey: string): Identity {
+        if (apiKey) {
+            let rec = this.identities.filter(id => id.apiKey == apiKey)[0];
             return rec ? {
-                token: rec.token,
+                apiKey: rec.apiKey,
                 roles: rec.roles.split(',').map(r => r.trim().toLocaleLowerCase())
             } : null;
         }
         return this.defaultRole ? {
-            token: null,
+            apiKey: null,
             roles: [this.defaultRole]
         } : null;
     }

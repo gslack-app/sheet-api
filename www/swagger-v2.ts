@@ -142,9 +142,10 @@ export class Swagger {
 
     private generateInfo(version: string): Info {
         let appName: string = PropertiesService.getScriptProperties().getProperty('app.name') || 'Sheet API';
+        let appVer: string = PropertiesService.getScriptProperties().getProperty('app.version') || '1.0.0';
         let obj: Info = {
-            title: `Swagger ${appName}`,
-            version: version
+            title: `${appName} REST API`,
+            version: appVer
         };
         return obj;
     }
@@ -152,7 +153,7 @@ export class Swagger {
     private createBasePath(): string {
         let url = ScriptApp.getService().getUrl();
         url = url.replace('https://script.google.com', '');
-        return `${url}?url=/api/v1`;
+        return `${url}?url=/api`;
     }
 
     private generatePaths(recs: Schema[]): Record<string, PathItem> {

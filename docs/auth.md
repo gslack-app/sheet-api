@@ -2,20 +2,20 @@
 
 ## Authentication
 
-All non-administrator roles should use a token key to access the API. Roles are assigned to a token on per-resource basis. This enables the flexibility of having a single token with different roles across different resources in the system. If no role is assigned to a token then access is denied. 
+All non-administrator roles should use an apiKey key to access the API. Roles are assigned to an apiKey on per-resource basis. This enables the flexibility of having a single apiKey with different roles across different resources in the system. If no role is assigned to an apiKey then access is denied. 
 
-You can generate tokens & assign roles in sheet **Authentication**.
+You can generate apiKey & assign roles in sheet **Authentication**.
 
 | Column  | Description                             |
 | --------|-----------------------------------------|
-| token   | Token value                             |
+| apiKey  | apiKey value                            |
 | roles   | Multiple roles separated by commas      |
 
-Token value need to have the properties that they:
+apiKey value need to have the properties that they:
 - uniquely identify an authorized API role
 - authenticate that user -- cannot be guessed/forged
 
-**Note**: You might use some online password generator tools to generate random & secured token.
+**Note**: You might use some online password generator tools to generate random & secured apiKey.
 
 ## Authorization
 
