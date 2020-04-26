@@ -98,9 +98,9 @@ GET https://<script_url>?url=/api/posts/1
 
 ### Filter
 
-The `where` param is used to return only rows that match a specified condition. The simple comparison operators are `<=`, `<`, `>`, `>=`, `=`, `!=`, `<>`. Both comparison operators `!=` `<>` mean not-equal. Strings are compared by lexicographic value. Comparing to null is done using `is null` or `is not null`.
+The `filter` param is used to return only rows that match a specified condition. The simple comparison operators are `<=`, `<`, `>`, `>=`, `=`, `!=`, `<>`. Both comparison operators `!=` `<>` mean not-equal. Strings are compared by lexicographic value. Comparing to null is done using `is null` or `is not null`.
 
-You can join multiple conditions using the logical operators `and`, `or`, and `not`. Parentheses can be used to define explicit precedence. The `where` clause also supports some more complex string comparison operators. These operators take two strings as arguments; any non-string arguments (for example, dates or numbers) will be converted to strings before comparison.  String matching is case sensitive (you can use upper() or lower() scalar functions to work around that).
+You can join multiple conditions using the logical operators `and`, `or`, and `not`. Parentheses can be used to define explicit precedence. The `filter` clause also supports some more complex string comparison operators. These operators take two strings as arguments; any non-string arguments (for example, dates or numbers) will be converted to strings before comparison.  String matching is case sensitive (you can use upper() or lower() scalar functions to work around that).
 - `contains` - A substring match. whole contains part is true if part is anywhere within whole. Example: `name contains 'John'` matches 'John', 'John Adams', 'Long John Silver' but not 'john adams'.
 - `starts with` - A prefix match. value starts with prefix is true if prefix is at the beginning of value. Examples: `dept starts with 'engineering'` matches 'engineering' and 'engineering managers'. `dept starts with 'e'` matches 'engineering', 'eng', and 'e'.
 - `ends with` - A suffix match. value ends with suffix is true if suffix is at the end of value. Example: `role ends with 'y'` matches 'cowboy', 'boy', and 'y'.

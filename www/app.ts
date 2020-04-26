@@ -93,7 +93,7 @@ export function clearSystemCache(): void {
     Browser.msgBox(appName, `The cache \\n${keys.join('\\n  ')}\\nare cleaned up`, Browser.Buttons.OK);
 }
 
-export function generateSwaggerDoc(): string {
+export function generateSwaggerDoc(): void {
     let di = getDI();
     let cacheSvc: IDataAdapter = di.get('IDataAdapter');
     cacheSvc.setCache(null);
@@ -119,9 +119,9 @@ export function generateSwaggerDoc(): string {
     });
     // Temporary: Output the result
     let json = swagger.getJSON();
-    return json;
-    // let ss = SpreadsheetApp.getActiveSpreadsheet();
-    // ss.getActiveCell().setValue(json);
+    //return json;
+    let ss = SpreadsheetApp.getActiveSpreadsheet();
+    ss.getActiveCell().setValue(json);
 }
 
 function getConfig(): WebConfig {
