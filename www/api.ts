@@ -32,7 +32,7 @@ export class ApiServlet extends HttpServlet {
     async doGet(req: ServletRequest, res: ServletResponse): Promise<void> {
         const orderRegex = /((?<field>\w+)\s*(?<dir>desc|asc)?\,?)+/i;
         let { resource, id, spreadsheetId, _resource_, resourceLimit } = req.var['_get_'];
-        let offset: number = id ? 1 : req.param.offset || 0;
+        let offset: number = id ? 0 : req.param.offset || 0;
         let orderBy: string = req.param.orderby || '';
         orderBy = orderRegex.test(orderBy) ? orderBy : null;
         resourceLimit = parseInt(resourceLimit);
@@ -41,12 +41,11 @@ export class ApiServlet extends HttpServlet {
         let where: string = req.param.filter;
         this.logger.debug(`limit ${limit} queryLimit ${queryLimit} resourceLimit ${resourceLimit} globalLimit ${this.globalLimit}`);
 
+        offset *= 1;
+        limit *= 1;
         // Check if unlimited query
         if (!id && queryLimit === 0 && resourceLimit === 0)
             limit = 0;
-        // Convert to number
-        offset *= 1;
-        limit *= 1;
         let schemas = this.getSchemas(_resource_);
         let restStatus: any;
 
@@ -98,7 +97,7 @@ export class ApiServlet extends HttpServlet {
             let wherePart = condition ? `where ${condition}` : '';
             let orderPart = orderBy ? `order by ${orderBy}` : '';
             let limitPart = limit ? `limit ${limit}` : '';
-            let offsetPart = `offset ${offset}`;
+            let offsetPart = offset ? `offset ${offset}` : '';
             let labelPart = `label ${labels.join()}`;
             let formatPart = formats.length ? `format ${formats.filter(f => f).join()}` : '';
             let optionsPart = `options ${this.queryOption}`;
