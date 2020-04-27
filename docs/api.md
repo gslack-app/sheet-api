@@ -116,9 +116,9 @@ dept != 'Eng' and date '2005-01-21' < hireDate
 ```
 
 ```
-GET https://<script_url>?url=/api/employees&where=salary+%3E%3D+600
-GET https://<script_url>?url=/api/employees&where=dept+!%3D+'Eng'+and+date+'2005-01-21'+%3C+hireDate
-GET https://<script_url>?url=/api/employees&where=(dept%3C%3E'Eng'+and+isSenior%3Dtrue)+or+(dept%3D'Sales')+or+seniorityStartTime+is+null
+GET https://<script_url>?url=/api/employees&filter=salary+%3E%3D+600
+GET https://<script_url>?url=/api/employees&filter=dept+!%3D+'Eng'+and+date+'2005-01-21'+%3C+hireDate
+GET https://<script_url>?url=/api/employees&filter=(dept%3C%3E'Eng'+and+isSenior%3Dtrue)+or+(dept%3D'Sales')+or+seniorityStartTime+is+null
 ```
 
 ### Paginate
@@ -135,18 +135,18 @@ This query would return the 20 rows starting with the 100th row. To get all rows
 
 ### Sort
 
-Add `order` (ascending order by default)
+Add `orderby` (ascending order by default)
 
 **Examples**
 
 ```
-GET https://<script_url>?url=/api/employees&order=salary+desc
+GET https://<script_url>?url=/api/employees&orderby=salary+desc
 ```
 
 For multiple fields, separate with commas:
 
 ```
-GET https://<script_url>?url=/api/employees&order=salary+desc%2ChireDate+asc
+GET https://<script_url>?url=/api/employees&orderby=salary+desc%2ChireDate+asc
 ```
 
 ## Create (POST)

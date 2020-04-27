@@ -189,15 +189,19 @@ export class SwaggerV2 {
         let paths: Record<string, PathItem> = {};
         resources.forEach(type => {
             let items = recs.filter(r => r.resource === type);
-            let pathItem: PathItem = {};
-            pathItem.get = this.createReadOperation(type, items, errorType);
-            paths[`/${type}`] = pathItem;
+            let listAll: PathItem = {};
+            listAll.get = this.createListOperation(type, items, errorType);
+            let showDetail: PathItem = {};
+            showDetail.get = this.createShowDetailOperation(type, 'id', items, errorType);
+            paths[`/${type}`] = listAll;
+            paths[`/${type}/{id}`] = showDetail;
         });
         return paths;
     }
 
-    private createReadOperation(resource: string, recs: Schema[], errorType: string): Operation {
+    private createListOperation(resource: string, recs: Schema[], errorType: string): Operation {
         let op: Operation = {
+            summary: `List ${resource}`,
             tags: [resource],
             parameters: [],
             responses: {}
@@ -206,6 +210,34 @@ export class SwaggerV2 {
         op.parameters.push({ $ref: '#/parameters/limit' });
         op.parameters.push({ $ref: '#/parameters/filter' });
         op.parameters.push({ $ref: '#/parameters/order' });
+        op.responses['default'] = {
+            description: 'Successful operation',
+            schema: {
+                type: 'array',
+                items: {
+                    $ref: `#/definitions/${resource}`
+                } as any
+            }
+        };
+        Object.assign(op.responses, this.generateErrorResponse(errorType));
+        return op;
+    }
+
+    private createShowDetailOperation(resource: string, id: string, recs: Schema[], errorType: string): Operation {
+        let op: Operation = {
+            summary: `Show ${resource} details`,
+            tags: [resource],
+            parameters: [],
+            responses: {}
+        };
+        op.parameters.push({
+            name: id,
+            required: true,
+            in: 'path',
+            type: 'string',
+            description: `The ID of the specified instance.`
+
+        } as Parameter);
         op.responses['default'] = {
             description: 'Successful operation',
             schema: {

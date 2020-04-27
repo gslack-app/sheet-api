@@ -1,14 +1,14 @@
 import { ApiServlet, ApiNotFoundHandler } from "./api";
+import { IDataAdapter } from "./interfaces";
 import { ApiGatekeeper } from "./api-gatekeeper";
+import { QueryAdapter } from "./query-adapter";
+import { SwaggerV2 } from "./swagger-v2";
 import { SpreadsheetAdapter } from "./spreadsheet-adapter";
 import { ResourceHandler } from "./resource-handler";
 import { Configuration, LogFilter, StackdriverLogger, CacheProvider } from "../core/common";
 import { LogLevel, WebConfig, ICache } from "../core/interfaces";
 import { HttpServletResponse, HttpServletContainer, HttpServletRequest } from "../core/servlet";
 import { DependencyInjection } from "../core/vendors";
-import { QueryAdapter } from "./query-adapter";
-import { IDataAdapter } from "./interfaces";
-import { Swagger } from "./swagger-v2";
 
 let appName: string = PropertiesService.getScriptProperties().getProperty('app.name') || 'Sheet API';
 
@@ -31,6 +31,7 @@ export function onOpen(e: any): void {
             { name: 'Authorize', functionName: 'authorizeScript' },
             { name: 'Initialize Settings', functionName: 'initSettings' },
             { name: 'Clear System Cache', functionName: 'clearSystemCache' },
+            null,
             { name: 'Generate Swagger Document', functionName: 'generateSwaggerDoc' }
         ];
         spreadsheet.addMenu(appName, menuItems);
@@ -108,7 +109,7 @@ export function generateSwaggerDoc(): void {
     let name: string = svc.getProperty('app.contact.name') || 'GSlack Team';
     let url: string = svc.getProperty('app.contact.url') || 'https://gslack.app';
     let email: string = svc.getProperty('app.contact.email') || 'info@gslack.app';
-    let swagger = new Swagger();
+    let swagger = new SwaggerV2();
     swagger.generate(schemas, {
         title: title,
         description: description,

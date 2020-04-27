@@ -33,12 +33,12 @@ export class ApiServlet extends HttpServlet {
         const orderRegex = /((?<field>\w+)\s*(?<dir>desc|asc)?\,?)+/i;
         let { resource, id, spreadsheetId, _resource_, resourceLimit } = req.var['_get_'];
         let offset: number = id ? 1 : req.param.offset || 1;
-        let orderBy: string = req.param.order || '';
+        let orderBy: string = req.param.orderby || '';
         orderBy = orderRegex.test(orderBy) ? orderBy : null;
         resourceLimit = parseInt(resourceLimit);
         let queryLimit = parseInt(req.param.limit);
         let limit: number = id ? 1 : queryLimit || resourceLimit || this.globalLimit;
-        let where: string = req.param.where;
+        let where: string = req.param.filter;
         this.logger.debug(`limit ${limit} queryLimit ${queryLimit} resourceLimit ${resourceLimit} globalLimit ${this.globalLimit}`);
 
         // Check if unlimited query
