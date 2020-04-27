@@ -157,7 +157,8 @@ function getConfig(): WebConfig {
                 handler: 'ApiServlet',
                 patterns: [
                     /^\/api\/(?<action>(create))\/(?<resource>[^\s\/]{2,36})(\/|$)/i,
-                    /^\/api\/(?<action>(update|delete))\/(?<resource>[^\s\/]{2,36})\/?(?<id>[^\s\/]{2,36})?(\/|$)/i
+                    /^\/api\/(?<action>(update|delete))\/(?<resource>[^\s\/]{2,36})\/?(?<id>[^\s\/]{2,36})?(\/|$)/i,
+                    /^\/api\/(?<action>(create|update|delete))\/batch\/(?<resource>[^\s\/]{2,36})(\/|$)/i
                 ]
             }
         ],

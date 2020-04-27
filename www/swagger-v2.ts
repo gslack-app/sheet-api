@@ -129,7 +129,7 @@ export class SwaggerV2 {
     securityDefinitions: Record<string, SecurityScheme>;
 
     generate(schemas: Schema[], params: Record<string, string>): void {
-        let errorType = 'Error';
+        let errorType = 'ApiError';
         let resources = schemas.map(r => r.resource).filter((value, index, self) => self.indexOf(value) === index);
         this.info = this.generateInfo(params);
         this.paths = this.generatePaths(resources, schemas, errorType);
@@ -143,12 +143,12 @@ export class SwaggerV2 {
             schemes: ['https'],
             consumes: ['application/json'],
             produces: ['application/json'],
-            tags: this.generateTags(resources),
             paths: this.paths,
             definitions: this.definitions,
             parameters: this.createSharedQueryParam(),
             securityDefinitions: this.securityDefinitions,
-            security: [{ apiKey: [] }]
+            security: [{ apiKey: [] }],
+            tags: this.generateTags(resources)
         };
         this.doc.definitions[errorType] = this.generateErrorDefinition();
     }
@@ -157,6 +157,7 @@ export class SwaggerV2 {
         return JSON.stringify(this.doc);
     }
 
+    //#region Info & Contact, License
     private generateInfo(params: Record<string, string>): Info {
         let { title, description, version, name, url, email } = params;
         let obj: Info = {
@@ -177,14 +178,9 @@ export class SwaggerV2 {
         url = url.replace('https://script.google.com', '');
         return `${url}?url=/api`;
     }
+    //#endregion
 
-    private generateTags(resources: string[]): Tag[] {
-        return resources.map(r => {
-            let t: Tag = { name: r };
-            return t;
-        });
-    }
-
+    //#region Paths
     private generatePaths(resources: string[], recs: Schema[], errorType: string): Record<string, PathItem> {
         let paths: Record<string, PathItem> = {};
         resources.forEach(type => {
@@ -193,15 +189,35 @@ export class SwaggerV2 {
             listAll.get = this.createListOperation(type, items, errorType);
             let showDetail: PathItem = {};
             showDetail.get = this.createShowDetailOperation(type, 'id', items, errorType);
+            let create: PathItem = {};
+            create.post = this.createInsertOperation(type, errorType);
+            let bulkCreate: PathItem = {};
+            bulkCreate.post = this.createBulkInsertOperation(type, errorType);
+            let update: PathItem = {};
+            update.post = this.createUpdateOperation(type, 'id', errorType);
+            let bulkUpdate: PathItem = {};
+            bulkUpdate.post = this.createBulkUpdateOperation(type, errorType);
+            let remove: PathItem = {};
+            remove.post = this.createDeleteOperation(type, 'id', errorType);
+            let bulkRemove: PathItem = {};
+            bulkRemove.post = this.createBulkDeleteOperation(type, errorType);
             paths[`/${type}`] = listAll;
             paths[`/${type}/{id}`] = showDetail;
+            paths[`/create/${type}`] = create;
+            paths[`/create/batch/${type}`] = bulkCreate;
+            paths[`/update/${type}/{id}`] = update;
+            paths[`/update/batch/${type}`] = bulkUpdate;
+            paths[`/delete/${type}/{id}`] = remove;
+            paths[`/delete/batch/${type}`] = bulkRemove;
         });
         return paths;
     }
 
+    //#region Read
     private createListOperation(resource: string, recs: Schema[], errorType: string): Operation {
         let op: Operation = {
             summary: `List ${resource}`,
+            operationId: `get${this.titleCase(resource)}`,
             tags: [resource],
             parameters: [],
             responses: {}
@@ -250,16 +266,208 @@ export class SwaggerV2 {
         Object.assign(op.responses, this.generateErrorResponse(errorType));
         return op;
     }
+    //#endregion
 
-    private createSharedQueryParam(): Record<string, Parameter> {
-        let params: Record<string, Parameter> = {};
-        params['offset'] = this.createParameter('offset', 'query', 'integer');
-        params['limit'] = this.createParameter('limit', 'query', 'integer');
-        params['filter'] = this.createParameter('filter', 'query', 'string');
-        params['order'] = this.createParameter('orderby', 'query', 'string');
-        return params;
+    //#region Create
+    private createInsertOperation(resource: string, errorType: string): Operation {
+        let op: Operation = {
+            summary: `Create ${resource}`,
+            operationId: `create${this.titleCase(resource)}`,
+            tags: [resource],
+            parameters: [],
+            responses: {}
+        };
+        op.parameters.push({
+            name: 'body',
+            in: 'body',
+            required: true,
+            schema: {
+                $ref: `#/definitions/${resource}`
+            }
+        });
+        op.responses['default'] = {
+            description: 'Successful operation',
+            schema: {
+                type: 'array',
+                items: {
+                    $ref: `#/definitions/${resource}`
+                } as any
+            }
+        };
+        Object.assign(op.responses, this.generateErrorResponse(errorType));
+        return op;
     }
 
+    private createBulkInsertOperation(resource: string, errorType: string): Operation {
+        let op: Operation = {
+            summary: `Create multiple ${resource}`,
+            operationId: `createMultiple${this.titleCase(resource)}`,
+            tags: [resource],
+            parameters: [],
+            responses: {}
+        };
+        op.parameters.push({
+            name: 'body',
+            in: 'body',
+            required: true,
+            schema: {
+                type: 'array',
+                items: {
+                    $ref: `#/definitions/${resource}`
+                } as any
+            }
+        });
+        op.responses['default'] = {
+            description: 'Successful operation',
+            schema: {
+                type: 'array',
+                items: {
+                    $ref: `#/definitions/${resource}`
+                } as any
+            }
+        };
+        Object.assign(op.responses, this.generateErrorResponse(errorType));
+        return op;
+    }
+    //#endregion
+
+    //#region Update
+    private createUpdateOperation(resource: string, id: string, errorType: string): Operation {
+        let op: Operation = {
+            summary: `Update ${resource}`,
+            operationId: `update${this.titleCase(resource)}`,
+            tags: [resource],
+            parameters: [],
+            responses: {}
+        };
+        op.parameters.push({
+            name: id,
+            required: true,
+            in: 'path',
+            type: 'string',
+            description: `The ID of the specified instance.`
+
+        } as Parameter);
+        op.parameters.push({
+            name: 'body',
+            in: 'body',
+            required: true,
+            schema: {
+                $ref: `#/definitions/${resource}`
+            }
+        });
+        op.responses['default'] = {
+            description: 'Successful operation',
+            schema: {
+                type: 'array',
+                items: {
+                    $ref: `#/definitions/${resource}`
+                } as any
+            }
+        };
+        Object.assign(op.responses, this.generateErrorResponse(errorType));
+        return op;
+    }
+
+    private createBulkUpdateOperation(resource: string, errorType: string): Operation {
+        let op: Operation = {
+            summary: `Update multiple ${resource}`,
+            operationId: `updateMultiple${this.titleCase(resource)}`,
+            tags: [resource],
+            parameters: [],
+            responses: {}
+        };
+        op.parameters.push({
+            name: 'body',
+            in: 'body',
+            required: true,
+            schema: {
+                type: 'array',
+                items: {
+                    $ref: `#/definitions/${resource}`
+                } as any
+            }
+        });
+        op.responses['default'] = {
+            description: 'Successful operation',
+            schema: {
+                type: 'array',
+                items: {
+                    $ref: `#/definitions/${resource}`
+                } as any
+            }
+        };
+        Object.assign(op.responses, this.generateErrorResponse(errorType));
+        return op;
+    }
+    //#endregion
+
+    //#region Delete
+    private createDeleteOperation(resource: string, id: string, errorType: string): Operation {
+        let op: Operation = {
+            summary: `Delete ${resource}`,
+            operationId: `delete${this.titleCase(resource)}`,
+            tags: [resource],
+            parameters: [],
+            responses: {}
+        };
+        op.parameters.push({
+            name: id,
+            required: true,
+            in: 'path',
+            type: 'string',
+            description: `The ID of the specified instance.`
+
+        } as Parameter);
+        op.responses['default'] = {
+            description: 'Successful operation',
+            schema: {
+                type: 'array',
+                items: {
+                    $ref: `#/definitions/${resource}`
+                } as any
+            }
+        };
+        Object.assign(op.responses, this.generateErrorResponse(errorType));
+        return op;
+    }
+
+    private createBulkDeleteOperation(resource: string, errorType: string): Operation {
+        let op: Operation = {
+            summary: `Delete multiple ${resource}`,
+            operationId: `deleteMultiple${this.titleCase(resource)}`,
+            tags: [resource],
+            parameters: [],
+            responses: {}
+        };
+        op.parameters.push({
+            name: 'body',
+            in: 'body',
+            required: true,
+            schema: {
+                type: 'array',
+                items: {
+                    type: 'string'
+                }
+            }
+        });
+        op.responses['default'] = {
+            description: 'Successful operation',
+            schema: {
+                type: 'array',
+                items: {
+                    $ref: `#/definitions/${resource}`
+                } as any
+            }
+        };
+        Object.assign(op.responses, this.generateErrorResponse(errorType));
+        return op;
+    }
+    //#endregion
+
+    //#endregion
+
+    //#region Definitions
     private generateDefinitions(resources: string[], recs: Schema[]): Record<string, Definitions> {
         let schemas: Record<string, Definitions> = {};
         resources.forEach(type => {
@@ -299,7 +507,52 @@ export class SwaggerV2 {
         };
         return errorSchema;
     }
+    //#endregion
 
+    //#region Parameters Definitions 
+    private createSharedQueryParam(): Record<string, Parameter> {
+        let params: Record<string, Parameter> = {};
+        params['offset'] = this.createParameter('offset', 'query', 'integer');
+        params['limit'] = this.createParameter('limit', 'query', 'integer');
+        params['filter'] = this.createParameter('filter', 'query', 'string');
+        params['order'] = this.createParameter('orderby', 'query', 'string');
+        return params;
+    }
+
+    private createParameter(name: string, location: InType, type: DataType, defValue?: any, required: boolean = false): Parameter {
+        let param: Parameter = {
+            name: name,
+            type: type,
+            in: location,
+            required: required,
+        };
+        if (defValue)
+            param.default = defValue;
+        return param;
+
+    }
+    //#endregion
+
+    //#region Security Definitions & Tags
+    private generateSecurityDefinitions(): Record<string, SecurityScheme> {
+        return {
+            'apiKey': {
+                type: 'apiKey',
+                name: "apiKey",
+                in: 'query'
+            }
+        };
+    }
+
+    private generateTags(resources: string[]): Tag[] {
+        return resources.map(r => {
+            let t: Tag = { name: r };
+            return t;
+        });
+    }
+    //#endregion
+
+    //#region Utils Functions
     private generateErrorResponse(errorType: string): Record<string, Response> {
         return {
             '200': {
@@ -329,26 +582,8 @@ export class SwaggerV2 {
         return prop;
     }
 
-    private createParameter(name: string, location: InType, type: DataType, defValue?: any, required: boolean = false): Parameter {
-        let param: Parameter = {
-            name: name,
-            type: type,
-            in: location,
-            required: required,
-        };
-        if (defValue)
-            param.default = defValue;
-        return param;
-
+    private titleCase(word: string): string {
+        return word.charAt(0).toUpperCase() + word.slice(1);
     }
-
-    private generateSecurityDefinitions(): Record<string, SecurityScheme> {
-        return {
-            'apiKey': {
-                type: 'apiKey',
-                name: "apiKey",
-                in: 'query'
-            }
-        };
-    }
+    //#endregion
 }

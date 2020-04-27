@@ -190,9 +190,11 @@ export class SpreadsheetAdapter {
         }
     }
 
-    protected setKey(value: any, rec: any): any {
-        let key: string = this.pkColumn || this.getSysId();
-        rec[key] = value;
+    protected setKey(value: any, rec: any): void {
+        if (value) {
+            let key: string = this.pkColumn || this.getSysId();
+            rec[key] = value;
+        }
     }
 
     protected cleanCache() {

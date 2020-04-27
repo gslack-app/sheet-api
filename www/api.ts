@@ -120,7 +120,7 @@ export class ApiServlet extends HttpServlet {
     async doPost(req: ServletRequest, res: ServletResponse): Promise<void> {
         let { action, resource, id, spreadsheetId, _resource_ } = req.var['_post_'];
         let objects: any = req.postData || null;
-        let batch: string = req.param.batch;
+        let batch: boolean = req.url.split('/').includes('batch');
         action = action ? action.toLowerCase() : '';
         let restStatus: any;
 
@@ -355,7 +355,7 @@ export class ApiServlet extends HttpServlet {
                             value = Boolean(value);
                             break;
                         case 'date':
-                            value = Date.parse(value);
+                            value = new Date(value);
                             break;
                         case 'number':
                             value = Number(value);
