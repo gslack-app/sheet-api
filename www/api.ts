@@ -32,7 +32,7 @@ export class ApiServlet extends HttpServlet {
     async doGet(req: ServletRequest, res: ServletResponse): Promise<void> {
         const orderRegex = /((?<field>\w+)\s*(?<dir>desc|asc)?\,?)+/i;
         let { resource, id, spreadsheetId, _resource_, resourceLimit } = req.var['_get_'];
-        let offset: number = id ? 1 : req.param.offset || 1;
+        let offset: number = id ? 1 : req.param.offset || 0;
         let orderBy: string = req.param.orderby || '';
         orderBy = orderRegex.test(orderBy) ? orderBy : null;
         resourceLimit = parseInt(resourceLimit);
@@ -45,7 +45,7 @@ export class ApiServlet extends HttpServlet {
         if (!id && queryLimit === 0 && resourceLimit === 0)
             limit = 0;
         // Convert to number
-        offset *= 0;
+        offset *= 1;
         limit *= 1;
         let schemas = this.getSchemas(_resource_);
         let restStatus: any;
