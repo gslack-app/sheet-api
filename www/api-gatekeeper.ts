@@ -55,9 +55,20 @@ export class ApiGatekeeper extends HttpFilter {
         }
 
         // Authorization check
-        let apiRegex = /^\/api\/(?<action>(create|update|delete))?\/?(?<resource>[^\s\/]{2,36})\/?(?<id>[^\s\/]{2,36})?(\/|$)/i;
-        let authorized = apiRegex.test(req.url);
-        if (authorized) {
+        let patterns = {
+            'get': [
+                /^\/api\/(?<resource>[^\s\/]{2,36})\/?(?<id>[^\s\/]{2,36})?(\/|$)/i
+            ],
+            'post': [
+                /^\/api\/(?<action>(create))\/(?<resource>[^\s\/]{2,36})(\/|$)/i,
+                /^\/api\/(?<action>(update|delete))\/(?<resource>[^\s\/]{2,36})\/?(?<id>[^\s\/]{2,36})?(\/|$)/i,
+                /^\/api\/bulk\/(?<action>(create|update|delete))\/(?<resource>[^\s\/]{2,36})(\/|$)/i
+            ]
+        };
+        let authorized = false;
+        let apiRegex = patterns[req.method.toLowerCase()].filter(p => p.test(req.url))[0] as RegExp;
+
+        if (apiRegex) {
             let { groups: { action, resource } } = apiRegex.exec(req.url);
             action = action || 'read';
             authorized = identity.roles.some(role => this.aclSvc.isAllowed(`${resource}.${action}`.toLowerCase(), role));

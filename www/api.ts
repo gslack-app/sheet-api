@@ -119,7 +119,7 @@ export class ApiServlet extends HttpServlet {
     async doPost(req: ServletRequest, res: ServletResponse): Promise<void> {
         let { action, resource, id, spreadsheetId, _resource_ } = req.var['_post_'];
         let objects: any = req.postData || null;
-        let batch: boolean = req.url.split('/').includes('batch');
+        let batch: boolean = req.url.split('/').includes('bulk');
         action = action ? action.toLowerCase() : '';
         let restStatus: any;
 
