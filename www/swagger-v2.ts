@@ -204,11 +204,11 @@ export class SwaggerV2 {
             paths[`/${type}`] = listAll;
             paths[`/${type}/{id}`] = showDetail;
             paths[`/create/${type}`] = create;
-            paths[`/create/batch/${type}`] = bulkCreate;
+            paths[`/bulk/create/${type}`] = bulkCreate;
             paths[`/update/${type}/{id}`] = update;
-            paths[`/update/batch/${type}`] = bulkUpdate;
+            paths[`/bulk/update/${type}`] = bulkUpdate;
             paths[`/delete/${type}/{id}`] = remove;
-            paths[`/delete/batch/${type}`] = bulkRemove;
+            paths[`/bulk/delete/${type}`] = bulkRemove;
         });
         return paths;
     }

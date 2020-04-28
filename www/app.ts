@@ -5,23 +5,38 @@ import { QueryAdapter } from "./query-adapter";
 import { SwaggerV2 } from "./swagger-v2";
 import { SpreadsheetAdapter } from "./spreadsheet-adapter";
 import { ResourceHandler } from "./resource-handler";
-import { Configuration, LogFilter, StackdriverLogger, CacheProvider } from "../core/common";
-import { LogLevel, WebConfig, ICache } from "../core/interfaces";
+import { Configuration, LogFilter, StackdriverLogger, CacheProvider, json } from "../core/common";
+import { LogLevel, WebConfig, ICache, HttpStatusCode, RequestEvent } from "../core/interfaces";
 import { HttpServletResponse, HttpServletContainer, HttpServletRequest } from "../core/servlet";
 import { DependencyInjection } from "../core/vendors";
+import { getErrorStatus } from "./functions";
 
 let appName: string = PropertiesService.getScriptProperties().getProperty('app.name') || 'Sheet API';
 
-export function doGet(request: any): any {
-    let container = new HttpServletContainer();
-    container.init(getConfig(), getDI());
-    return container.doGet(request);
+export function doGet(request: RequestEvent): any {
+    try {
+        let container = new HttpServletContainer();
+        container.init(getConfig(), getDI());
+        return container.doGet(request);
+    }
+    catch (e) {
+        let res = getErrorStatus(HttpStatusCode.INTERNAL_SERVER_ERROR);
+        res.detail = e.message;
+        return json(res);
+    }
 }
 
-export function doPost(request: any): any {
-    let container = new HttpServletContainer();
-    container.init(getConfig(), getDI());
-    return container.doPost(request);
+export function doPost(request: RequestEvent): any {
+    try {
+        let container = new HttpServletContainer();
+        container.init(getConfig(), getDI());
+        return container.doPost(request);
+    }
+    catch (e) {
+        let res = getErrorStatus(HttpStatusCode.INTERNAL_SERVER_ERROR);
+        res.detail = e.message;
+        return json(res);
+    }
 }
 
 export function onOpen(e: any): void {
