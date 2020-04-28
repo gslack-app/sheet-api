@@ -157,6 +157,10 @@ export class SwaggerV2 {
         return JSON.stringify(this.doc);
     }
 
+    getDocument(): SwaggerV2 {
+        return this.doc;
+    }
+
     //#region Info & Contact, License
     private generateInfo(params: Record<string, string>): Info {
         let { title, description, version, name, url, email } = params;

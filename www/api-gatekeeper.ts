@@ -11,6 +11,7 @@ export class ApiGatekeeper extends HttpFilter {
     private rules: Rule[];
     private aclSvc: IACLService;
     private defaultRole: string;
+    private bypassRoutes: string[];
 
     constructor({ ILogger, IDataAdapter }: any) {
         super();
@@ -20,8 +21,9 @@ export class ApiGatekeeper extends HttpFilter {
 
     init(param?: Record<string, any>): void {
         super.init(param);
-        let { authentication, authorization, defaultRole } = this.param;
+        let { authentication, authorization, defaultRole, bypass } = this.param;
         this.defaultRole = defaultRole ? defaultRole.trim().toLowerCase() : null;
+        this.bypassRoutes = bypass || [];
 
         this.adapter.init({ name: authentication });
         this.identities = this.adapter.select();
@@ -44,9 +46,11 @@ export class ApiGatekeeper extends HttpFilter {
     }
 
     doFilter(req: ServletRequest, res: ServletResponse): void {
+        if (this.bypassRoutes.includes(req.url))
+            return;
+
         let { apiKey } = req.param;
         let identity = this.getIdenity(apiKey);
-
         // Authentication check
         if (!identity) {
             this.logger.info(`API key ${apiKey} is invalid`);

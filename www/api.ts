@@ -30,16 +30,15 @@ export class ApiServlet extends HttpServlet {
     }
 
     async doGet(req: ServletRequest, res: ServletResponse): Promise<void> {
-        const orderRegex = /((?<field>\w+)\s*(?<dir>desc|asc)?\,?)+/i;
+        const orderByRegex = /((?<field>\w+)\s*(?<dir>desc|asc)?\,?)+/i;
         let { resource, id, spreadsheetId, _resource_, resourceLimit } = req.var['_get_'];
         let offset: number = id ? 0 : req.param.offset || 0;
         let orderBy: string = req.param.orderby || '';
-        orderBy = orderRegex.test(orderBy) ? orderBy : null;
+        orderBy = orderByRegex.test(orderBy) ? orderBy : null;
         resourceLimit = parseInt(resourceLimit);
         let queryLimit = parseInt(req.param.limit);
         let limit: number = id ? 1 : queryLimit || resourceLimit || this.globalLimit;
         let where: string = req.param.filter;
-        this.logger.debug(`limit ${limit} queryLimit ${queryLimit} resourceLimit ${resourceLimit} globalLimit ${this.globalLimit}`);
 
         offset *= 1;
         limit *= 1;
@@ -47,73 +46,63 @@ export class ApiServlet extends HttpServlet {
         if (!id && queryLimit === 0 && resourceLimit === 0)
             limit = 0;
         let schemas = this.getSchemas(_resource_);
-        let restStatus: any;
+        this.queryAdapter.init({ name: resource, id: spreadsheetId });
+        this.queryAdapter.setFormat(this.queryOption == 'no_format' ? 'json' : 'csv');
+        let columns: string[];
+        let condition: string;
+        let labels: string[];
+        let formats: string[];
+        let pk = schemas.filter(s => s.primary)[0];
 
-        try {
-            this.queryAdapter.init({ name: resource, id: spreadsheetId });
-            this.queryAdapter.setFormat(this.queryOption == 'no_format' ? 'json' : 'csv');
-            let columns: string[];
-            let condition: string;
-            let labels: string[];
-            let formats: string[];
-            let pk = schemas.filter(s => s.primary)[0];
+        if (id && !pk)
+            throw new Error(`Resource ${_resource_} does not have primary key column`);
 
-            if (id && !pk)
-                throw new Error(`Resource ${_resource_} does not have primary key column`);
-
-            if (schemas.length) {
-                columns = schemas.map(s => this.queryAdapter.getIdByColumn(s.column));
-                labels = schemas.map(s => `${this.queryAdapter.getIdByColumn(s.column)} '${s.alias}'`);
-                formats = schemas.map(s => s.format ? `${this.queryAdapter.getIdByColumn(s.column)} '${s.format}'` : null).filter(f => f);
-            }
-            else {
-                columns = this.queryAdapter.getIds();
-                labels = columns.map(c => `${c} '${this.queryAdapter.getColumnById(c)}'`);
-                formats = [];
-            }
-
-            if (id) {
-                orderBy = null;
-                condition = `${this.queryAdapter.getIdByColumn(pk.column)} = ${this.formatLiteral(pk.type, id)}`;
-            }
-            else {
-                // Reserved words must be back-quoted if used as an identifier
-                let reservedIds = /(by|format|group|label|limit|offset|options|order|pivot|select|where)/gi;
-                // Convert alias to column id
-                schemas.sort((s1, s2) => s2.alias.length - s1.alias.length);
-                // Replace the longest alias first
-                if (orderBy) {
-                    schemas.forEach(s => orderBy = orderBy.replace(new RegExp(s.alias, 'g'), this.queryAdapter.getIdByColumn(s.column)));
-                    orderBy = orderBy.replace(reservedIds, `"$1"`);
-                }
-                if (where) {
-                    schemas.forEach(s => where = where.replace(new RegExp(s.alias, 'g'), this.queryAdapter.getIdByColumn(s.column)));
-                    where = where.replace(reservedIds, `"$1"`);
-                }
-                condition = where;
-            }
-
-            let selectPart = `select ${columns.join()}`;
-            let wherePart = condition ? `where ${condition}` : '';
-            let orderPart = orderBy ? `order by ${orderBy}` : '';
-            let limitPart = limit ? `limit ${limit}` : '';
-            let offsetPart = offset ? `offset ${offset}` : '';
-            let labelPart = `label ${labels.join()}`;
-            let formatPart = formats.length ? `format ${formats.filter(f => f).join()}` : '';
-            let optionsPart = `options ${this.queryOption}`;
-            let query = [selectPart, wherePart, orderPart, limitPart, offsetPart, labelPart, formatPart, optionsPart].join(' ');
-            this.logger.debug(query);
-            let results = req.param.output == 'csv' ? this.queryAdapter.exportToCsv(query) : this.queryAdapter.query(query);
-            req.param.output == 'csv'
-                ? res.mime(ContentService.MimeType.CSV).send(results, HttpStatusCode.OK)
-                : res.json(results, HttpStatusCode.OK).end();
+        if (schemas.length) {
+            columns = schemas.map(s => this.queryAdapter.getIdByColumn(s.column));
+            labels = schemas.map(s => `${this.queryAdapter.getIdByColumn(s.column)} '${s.alias}'`);
+            formats = schemas.map(s => s.format ? `${this.queryAdapter.getIdByColumn(s.column)} '${s.format}'` : null).filter(f => f);
         }
-        catch (e) {
-            this.logger && this.logger.error(`ApiServlet -> ${e.stack}`);
-            restStatus = getErrorStatus(HttpStatusCode.INTERNAL_SERVER_ERROR);
-            restStatus.detail = e.message;
-            res.json(restStatus, HttpStatusCode.INTERNAL_SERVER_ERROR).end();
+        else {
+            columns = this.queryAdapter.getIds();
+            labels = columns.map(c => `${c} '${this.queryAdapter.getColumnById(c)}'`);
+            formats = [];
         }
+
+        if (id) {
+            orderBy = null;
+            condition = `${this.queryAdapter.getIdByColumn(pk.column)} = ${this.formatLiteral(pk.type, id)}`;
+        }
+        else {
+            // Reserved words must be back-quoted if used as an identifier
+            let reservedIds = /(by|format|group|label|limit|offset|options|order|pivot|select|where)/gi;
+            // Convert alias to column id
+            schemas.sort((s1, s2) => s2.alias.length - s1.alias.length);
+            // Replace the longest alias first
+            if (orderBy) {
+                schemas.forEach(s => orderBy = orderBy.replace(new RegExp(s.alias, 'g'), this.queryAdapter.getIdByColumn(s.column)));
+                orderBy = orderBy.replace(reservedIds, `"$1"`);
+            }
+            if (where) {
+                schemas.forEach(s => where = where.replace(new RegExp(s.alias, 'g'), this.queryAdapter.getIdByColumn(s.column)));
+                where = where.replace(reservedIds, `"$1"`);
+            }
+            condition = where;
+        }
+
+        let selectPart = `select ${columns.join()}`;
+        let wherePart = condition ? `where ${condition}` : '';
+        let orderPart = orderBy ? `order by ${orderBy}` : '';
+        let limitPart = limit ? `limit ${limit}` : '';
+        let offsetPart = offset ? `offset ${offset}` : '';
+        let labelPart = `label ${labels.join()}`;
+        let formatPart = formats.length ? `format ${formats.filter(f => f).join()}` : '';
+        let optionsPart = `options ${this.queryOption}`;
+        let query = [selectPart, wherePart, orderPart, limitPart, offsetPart, labelPart, formatPart, optionsPart].join(' ');
+        this.logger.debug(query);
+        let results = req.param.output == 'csv' ? this.queryAdapter.exportToCsv(query) : this.queryAdapter.query(query);
+        req.param.output == 'csv'
+            ? res.mime(ContentService.MimeType.CSV).send(results, HttpStatusCode.OK)
+            : res.json(results, HttpStatusCode.OK).end();
     }
 
     async doPost(req: ServletRequest, res: ServletResponse): Promise<void> {
@@ -123,43 +112,36 @@ export class ApiServlet extends HttpServlet {
         action = action ? action.toLowerCase() : '';
         let restStatus: any;
 
-        try {
-            // Support only single primary key        
-            let schemas = this.getSchemas(_resource_);
-            let pkCol = schemas.filter(rec => rec.primary)[0];
-            this.dataAdapter.init({ name: resource, id: spreadsheetId });
-            if (pkCol) {
-                this.dataAdapter.setKeyColumn(pkCol.column);
-                this.dataAdapter.setKeyType(pkCol.primary as any, pkCol.seed, pkCol.step);
-            }
-            // Validate post data
-            restStatus = getErrorStatus(HttpStatusCode.BAD_REQUEST);
-            let should = (batch && action !== 'delete') || ['create', 'update'].includes(action);
-            if (should && !objects) {
-                res.json(restStatus, HttpStatusCode.BAD_REQUEST).end();
-                return;
-            }
-
-            let error = should ? this.validate(schemas, objects) : null;
-            if (error) {
-                restStatus.detail = error;
-                res.json(restStatus, HttpStatusCode.BAD_REQUEST).end();
-                return;
-            }
-
-            // Transform data                 
-            objects = should ? this.transformFromREST(schemas, objects) : objects;
-            restStatus = batch
-                ? this.processPostBatch(action, objects, schemas)
-                : this.processPost(action, id, objects ? objects[0] : null, schemas);
-            res.json(restStatus, HttpStatusCode.OK).end();
+        // Support only single primary key        
+        let schemas = this.getSchemas(_resource_);
+        let pkCol = schemas.filter(rec => rec.primary)[0];
+        this.dataAdapter.init({ name: resource, id: spreadsheetId });
+        if (pkCol) {
+            this.dataAdapter.setKeyColumn(pkCol.column);
+            this.dataAdapter.setKeyType(pkCol.primary as any, pkCol.seed, pkCol.step);
         }
-        catch (e) {
-            this.logger && this.logger.error(`ApiServlet -> ${e.stack}`);
-            restStatus = getErrorStatus(HttpStatusCode.INTERNAL_SERVER_ERROR);
-            restStatus.detail = e.message;
-            res.json(restStatus, HttpStatusCode.INTERNAL_SERVER_ERROR).end();
+
+        // Validate post data
+        restStatus = getErrorStatus(HttpStatusCode.BAD_REQUEST);
+        let should = (batch && action !== 'delete') || ['create', 'update'].includes(action);
+        if (should && !objects) {
+            res.json(restStatus, HttpStatusCode.BAD_REQUEST).end();
+            return;
         }
+
+        let error = should ? this.validate(schemas, objects) : null;
+        if (error) {
+            restStatus.detail = error;
+            res.json(restStatus, HttpStatusCode.BAD_REQUEST).end();
+            return;
+        }
+
+        // Transform data                 
+        objects = should ? this.transformFromREST(schemas, objects) : objects;
+        restStatus = batch
+            ? this.processPostBatch(action, objects, schemas)
+            : this.processPost(action, id, objects ? objects[0] : null, schemas);
+        res.json(restStatus, HttpStatusCode.OK).end();
     }
 
     protected processPost(action: string, id: any, objects: any, schemas: Schema[]): any {
@@ -191,8 +173,7 @@ export class ApiServlet extends HttpServlet {
         return results;
     }
 
-    protected processPostBatch(action: string, objects: any, schemas: Schema[]): void {
-        //let status = getErrorStatus(HttpStatusCode.OK);
+    protected processPostBatch(action: string, objects: any, schemas: Schema[]): any {
         let results: any;
         let columns = this.dataAdapter.getColumns();
         if (action == 'create') {
