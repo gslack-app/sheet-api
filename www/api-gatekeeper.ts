@@ -61,12 +61,12 @@ export class ApiGatekeeper extends HttpFilter {
         // Authorization check
         let patterns = {
             'get': [
-                /^\/api\/(?<resource>[^\s\/]{2,36})\/?(?<id>[^\s\/]{2,36})?(\/|$)/i
+                /^\/api\/(?<resource>[^\s\/]{1,36})\/?(?<id>[^\s\/]{1,36})?(\/|$)/i
             ],
             'post': [
-                /^\/api\/(?<action>(create))\/(?<resource>[^\s\/]{2,36})(\/|$)/i,
-                /^\/api\/(?<action>(update|delete))\/(?<resource>[^\s\/]{2,36})\/?(?<id>[^\s\/]{2,36})?(\/|$)/i,
-                /^\/api\/bulk\/(?<action>(create|update|delete))\/(?<resource>[^\s\/]{2,36})(\/|$)/i
+                /^\/api\/(?<action>(create))\/(?<resource>[^\s\/]{1,36})(\/|$)/i,
+                /^\/api\/(?<action>(update|delete))\/(?<resource>[^\s\/]{1,36})\/?(?<id>[^\s\/]{1,36})?(\/|$)/i,
+                /^\/api\/bulk\/(?<action>(create|update|delete))\/(?<resource>[^\s\/]{1,36})(\/|$)/i
             ]
         };
         let authorized = false;

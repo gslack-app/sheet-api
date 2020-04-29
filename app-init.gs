@@ -25,7 +25,3 @@ function clearDataCache() {
 function clearSystemCache() {
     return app.clearSystemCache();
 }
-
-function generateSwaggerDoc() {
-    return app.generateSwaggerDoc();
-}

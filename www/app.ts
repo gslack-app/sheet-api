@@ -55,9 +55,8 @@ export function onOpen(e: any): void {
         var menuItems = [
             { name: 'Authorize', functionName: 'authorizeScript' },
             { name: 'Initialize Settings', functionName: 'initSettings' },
-            { name: 'Clear System Cache', functionName: 'clearSystemCache' },
             null,
-            { name: 'Generate Swagger Document', functionName: 'generateSwaggerDoc' }
+            { name: 'Clear System Cache', functionName: 'clearSystemCache' }
         ];
         spreadsheet.addMenu(appName, menuItems);
     }
@@ -147,7 +146,6 @@ export function generateSwaggerDoc(): SwaggerV2 {
 }
 
 function getConfig(): WebConfig {
-    let logLevel: any = PropertiesService.getScriptProperties().getProperty('app.logLevel') || LogLevel.INFO;
     let defaultRole: any = PropertiesService.getScriptProperties().getProperty('app.defaultRole');
     let noFormat: any = PropertiesService.getScriptProperties().getProperty('app.query.no_format');
     let limit: any = PropertiesService.getScriptProperties().getProperty('app.query.limit');
@@ -175,16 +173,16 @@ function getConfig(): WebConfig {
                 method: 'GET',
                 handler: 'ApiServlet',
                 patterns: [
-                    /^\/api\/(?<resource>[^\s\/]{2,36})\/?(?<id>[^\s\/]{2,36})?(\/|$)/i
+                    /^\/api\/(?<resource>[^\s\/]{1,36})\/?(?<id>[^\s\/]{1,36})?(\/|$)/i
                 ]
             },
             {
                 method: 'POST',
                 handler: 'ApiServlet',
                 patterns: [
-                    /^\/api\/(?<action>(create))\/(?<resource>[^\s\/]{2,36})(\/|$)/i,
-                    /^\/api\/(?<action>(update|delete))\/(?<resource>[^\s\/]{2,36})\/?(?<id>[^\s\/]{2,36})?(\/|$)/i,
-                    /^\/api\/bulk\/(?<action>(create|update|delete))\/(?<resource>[^\s\/]{2,36})(\/|$)/i
+                    /^\/api\/(?<action>(create))\/(?<resource>[^\s\/]{1,36})(\/|$)/i,
+                    /^\/api\/(?<action>(update|delete))\/(?<resource>[^\s\/]{1,36})\/?(?<id>[^\s\/]{1,36})?(\/|$)/i,
+                    /^\/api\/bulk\/(?<action>(create|update|delete))\/(?<resource>[^\s\/]{1,36})(\/|$)/i
                 ]
             }
         ],
@@ -214,12 +212,14 @@ function getConfig(): WebConfig {
 };
 
 function getDI(): DependencyInjection {
+    let logLevel: any = PropertiesService.getScriptProperties().getProperty('app.logLevel') || LogLevel.INFO;
     return new DependencyInjection([
+        { name: 'logLevel', useValue: logLevel },
         { name: 'ServletRequest', useClass: HttpServletRequest },
         { name: 'ServletResponse', useClass: HttpServletResponse },
         { name: 'NotFoundHandler', useClass: ApiNotFoundHandler },
         { name: 'IConfiguration', useClass: Configuration },
-        { name: 'ILogger', useClass: StackdriverLogger, singleton: true },
+        { name: 'ILogger', useClass: StackdriverLogger, deps: ['logLevel'], singleton: true },
         { name: 'ICache', useClass: CacheProvider, deps: ['ILogger'] },
         { name: 'IDataAdapter', useClass: SpreadsheetAdapter, deps: ['ICache'] },
         { name: 'IQueryAdapter', useClass: QueryAdapter, deps: ['ILogger'] },

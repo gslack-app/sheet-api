@@ -4,8 +4,8 @@ import { ServletRequest, ServletResponse, Filter, NotFoundHandler, LogLevel, ILo
 export class SimpleLogger implements ILogger {
     private minLevel: LogLevel;
 
-    constructor() {
-        this.minLevel = LogLevel.INFO;
+    constructor({ logLevel }: any) {
+        this.minLevel = logLevel || LogLevel.INFO;
     }
 
     setLogLevel(level: LogLevel): void {
@@ -37,8 +37,8 @@ export class SimpleLogger implements ILogger {
 export class StackdriverLogger implements ILogger {
     private minLevel: LogLevel;
 
-    constructor() {
-        this.minLevel = LogLevel.INFO;
+    constructor({ logLevel }: any) {
+        this.minLevel = logLevel || LogLevel.INFO;
     }
 
     setLogLevel(level: LogLevel): void {
