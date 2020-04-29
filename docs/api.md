@@ -230,14 +230,20 @@ The successful result contain an array of deleted object.
 
 ## Bulk Create/Update/Delete (POST)
 
-Sheet API that allows a user to send a collection of `resource` in single request using param `batch=1`
+Sheet API that allows a user to send a collection of `resource` in single request.
+
+```
+POST https://<script_url>?url=/api/bulk/create/<resource-name>
+POST https://<script_url>?url=/api/bulk/update/<resource-name>
+POST https://<script_url>?url=/api/bulk/delete/<resource-name>
+```
 
 **Examples**
 
 ```
-POST https://<script_url>?url=/api/create/contacts?batch=1
-POST https://<script_url>?url=/api/update/contacts?batch=1
-POST https://<script_url>?url=/api/delete/contacts?batch=1
+POST https://<script_url>?url=/api/bulk/create/contacts
+POST https://<script_url>?url=/api/bulk/update/contacts
+POST https://<script_url>?url=/api/bulk/delete/contacts
 ```
 
 The request body for `Create` or `Update` action
