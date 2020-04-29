@@ -9,6 +9,7 @@ Google Sheets API, Turn Google Spreadsheet Into API
 - [Resources](docs/resources.md)
 - [Auth](docs/auth.md)
 - [API](docs/api.md)
+- [Swagger API Documentation](docs/swagger.md)
 
 ## Dependencies
 
