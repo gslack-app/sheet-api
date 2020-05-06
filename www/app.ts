@@ -1,4 +1,4 @@
-import { ApiServlet, ApiNotFoundHandler } from "./api";
+import { ApiServlet, ApiNotFoundHandler, ApiServletRequest, ApiServletResponse } from "./api";
 import { ApiGatekeeper } from "./api-gatekeeper";
 import { getErrorStatus } from "./functions";
 import { IDataAdapter } from "./interfaces";
@@ -8,7 +8,7 @@ import { SpreadsheetAdapter } from "./spreadsheet-adapter";
 import { ResourceHandler } from "./resource-handler";
 import { Configuration, LogFilter, StackdriverLogger, CacheProvider, json } from "../core/common";
 import { LogLevel, WebConfig, ICache, HttpStatusCode, RequestEvent, ILogger } from "../core/interfaces";
-import { HttpServletResponse, HttpServletContainer, HttpServletRequest } from "../core/servlet";
+import { HttpServletResponse, HttpServletContainer } from "../core/servlet";
 import { DependencyInjection } from "../core/vendors";
 
 let appName: string = PropertiesService.getScriptProperties().getProperty('app.name') || 'Sheet API';
@@ -215,8 +215,8 @@ function getDI(): DependencyInjection {
     let logLevel: any = PropertiesService.getScriptProperties().getProperty('app.logLevel') || LogLevel.INFO;
     return new DependencyInjection([
         { name: 'logLevel', useValue: logLevel },
-        { name: 'ServletRequest', useClass: HttpServletRequest },
-        { name: 'ServletResponse', useClass: HttpServletResponse },
+        { name: 'ServletRequest', useClass: ApiServletRequest },
+        { name: 'ServletResponse', useClass: ApiServletResponse },
         { name: 'NotFoundHandler', useClass: ApiNotFoundHandler },
         { name: 'IConfiguration', useClass: Configuration },
         { name: 'ILogger', useClass: StackdriverLogger, deps: ['logLevel'], singleton: true },

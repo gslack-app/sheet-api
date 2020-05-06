@@ -1,5 +1,5 @@
 {
-    "version": "0.0.7",
+    "version": "0.0.8",
     "scripts": {
         "build": "webpack --display-error-details",
         "build:prod": "cross-env NODE_ENV=production npm run build",

@@ -1,7 +1,7 @@
 import { IDataAdapter, Schema, IQueryAdapter } from "./interfaces";
 import { getErrorStatus, transform, evalExp, email, required, url, blank } from "./functions";
-import { ILogger, ServletRequest, ServletResponse, NotFoundHandler, HttpStatusCode } from "../core/interfaces";
-import { HttpServlet } from "../core/servlet";
+import { ILogger, ServletRequest, ServletResponse, NotFoundHandler, HttpStatusCode, RequestEvent } from "../core/interfaces";
+import { HttpServlet, HttpServletRequest, HttpServletResponse } from "../core/servlet";
 import { json } from "../core/common";
 import { error, object, array, string, number, boolean, date, regexp, Null, Undefined, empty, regex, not, any, and, or, optional, is, oneOf, like, objectOf, arrayOf } from 'f-validator';
 
@@ -29,8 +29,9 @@ export class ApiServlet extends HttpServlet {
         this.schemas = this.schemas = this.dataAdapter.select();
     }
 
-    async doGet(req: ServletRequest, res: ServletResponse): Promise<void> {
+    async doGet(req: ApiServletRequest, res: ApiServletResponse): Promise<void> {
         const orderByRegex = /((?<field>\w+)\s*(?<dir>desc|asc)?\,?)+/i;
+        let callback: string = req.param.callback;
         let { resource, id, spreadsheetId, _resource_, resourceLimit } = req.var['_get_'];
         let offset: number = id ? 0 : req.param.offset || 0;
         let orderBy: string = req.param.orderby || '';
@@ -102,7 +103,7 @@ export class ApiServlet extends HttpServlet {
         let results = req.param.output == 'csv' ? this.queryAdapter.exportToCsv(query) : this.queryAdapter.query(query);
         req.param.output == 'csv'
             ? res.mime(ContentService.MimeType.CSV).send(results, HttpStatusCode.OK)
-            : res.json(results, HttpStatusCode.OK).end();
+            : (callback ? res.jsonp(callback, results, HttpStatusCode.OK).end() : res.json(results, HttpStatusCode.OK).end());
     }
 
     async doPost(req: ServletRequest, res: ServletResponse): Promise<void> {
@@ -373,5 +374,43 @@ export class ApiNotFoundHandler implements NotFoundHandler {
 
     doPost(): GoogleAppsScript.Content.TextOutput | GoogleAppsScript.HTML.HtmlOutput {
         return json(getErrorStatus(HttpStatusCode.NOT_FOUND));
+    }
+}
+
+export class ApiServletRequest extends HttpServletRequest {
+    constructor() {
+        super();
+    }
+
+    init(method: 'GET' | 'POST', request: RequestEvent) {
+        super.init(method, request);
+        // Also accept text/plain
+        if (request.postData) {
+            this.type = request.postData.type;
+            try {
+                this.postData = JSON.parse(request.postData.contents);
+            }
+            catch {
+                this.postData = request.postData.contents;
+            }
+        }
+    }
+}
+
+export class ApiServletResponse extends HttpServletResponse {
+    constructor() {
+        super();
+    }
+
+    jsonp(callback: string, body: any, status?: number): ServletResponse {
+        if (this.isCommitted)
+            return this;
+        if (status)
+            this.code = status;
+        this.mime(ContentService.MimeType.JAVASCRIPT);
+        let content = `${callback}(${JSON.stringify(body)})`;
+        this.text.append(content);
+        this.output = this.text;
+        return this;
     }
 }

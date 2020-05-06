@@ -49,9 +49,9 @@ export class HttpServletRequest implements ServletRequest {
 }
 
 export class HttpServletResponse implements ServletResponse {
-    private code: number;
-    private isCommitted: boolean;
-    private type: 'text' | 'html';
+    protected code: number;
+    protected isCommitted: boolean;
+    protected type: 'text' | 'html';
     protected text: GoogleAppsScript.Content.TextOutput;
     protected html: GoogleAppsScript.HTML.HtmlOutput;
     output: GoogleAppsScript.Content.TextOutput | GoogleAppsScript.HTML.HtmlOutput;
