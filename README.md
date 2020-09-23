@@ -2,10 +2,19 @@
 
 Turn Google Spreadsheet Into API
 
+## General
+
+SheetApi is a free Google Apps Script that allows you to add REST API to any spreadsheet in Google Sheets in a few minutes. The API can be accessed over HTTPS from back-end as well as front-end apps. SheetApi is a free alternative to tools like sheetsu.com, sheetdb.io or sheety.co. With SheetApi you get just the same but for free. Moreover, you don't share the data with any third party because the code runs on your account as a Google Apps Script.
+
 ## Demo
 
 - [SheetAPI Backend](https://rebrand.ly/sheetapi-demo)
 - [Sample Data](https://drive.google.com/drive/u/0/folders/1RAEPtOVqywACIH55jsZfOxz51xRmN0kB)
+
+## Limitations
+
+- Only GET and POST methods are supported.
+- Google Apps Script is **SLOW** See [Quotas for Google Services](https://developers.google.com/apps-script/guides/services/quotas)
 
 ## Documentation
 
