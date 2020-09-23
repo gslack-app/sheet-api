@@ -26,3 +26,7 @@ You might need some modifications to let Sheet API match your needs. This can be
 ## Clear System Cache
 
 To accelerate the speed, Sheet API loads all sheet data of the spreadsheet that hosts script project. Each time you update data and want the changes available immediately then you need to select **Sheet API** > **Clear System Cache**
+
+If you enjoy my work, please consider supporting what I do. Thank you.
+
+<a href='https://ko-fi.com/siquylee' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://az743702.vo.msecnd.net/cdn/kofi2.png?v=0' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>

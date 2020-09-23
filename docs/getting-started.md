@@ -47,3 +47,7 @@ An Apps Script project deployment is a version of the script that is made availa
 - Click **Deploy**.
 - You'll see a new dialog with a message indicating that your project has been successfully deployed as a web app.
 - The url labeled **Current web app URL** and ends in **/exec**. This URL is for the published version of your app, based on the last version you saved and deployed. In Sheet API document, this url will be refered as **<script-url>**
+
+If you enjoy my work, please consider supporting what I do. Thank you.
+
+<a href='https://ko-fi.com/siquylee' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://az743702.vo.msecnd.net/cdn/kofi2.png?v=0' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
