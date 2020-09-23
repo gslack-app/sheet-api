@@ -2,6 +2,11 @@
 
 Google Sheets API, Turn Google Spreadsheet Into API
 
+## Demo
+
+- [Backend Sheet](https://rebrand.ly/sheetapi-demo)
+- [Sample Data](https://drive.google.com/drive/u/0/folders/1RAEPtOVqywACIH55jsZfOxz51xRmN0kB)
+
 ## Documentation
 
 - [Getting started](docs/getting-started.md)
